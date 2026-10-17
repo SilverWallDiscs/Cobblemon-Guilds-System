@@ -259,7 +259,7 @@ public final class GuildService {
         q.completed=true;g.questsCompleted++;
         if(g.questsCompleted>=10 && g.achievements.add("Quest Adventurers"))g.addAudit("Achievement unlocked: Quest Adventurers");
         if(g.questsCompleted>=100 && g.achievements.add("Quest Masters"))g.addAudit("Achievement unlocked: Quest Masters");
-        GuildLevels.grant(g,GuildLevels.questReward(q.target));
+        GuildLevels.grant(g,GuildLevels.questReward(q.kind,q.target));
         if(q.id.startsWith("day-") && !java.time.LocalDate.now(zone()).toString().equals(g.lastCompletedDailyQuestDay)){
             java.time.LocalDate today=java.time.LocalDate.now(zone());
             boolean consecutive;

@@ -146,6 +146,18 @@ public final class GuildGui {
         m.slot(31,item(Items.CLOCK,"§fGuild Activity Logs","§7Recent activity"),(pl,c)->logs(pl,svc,g,admin));
         m.slot(32,item(Items.NAME_TAG,"§eGuild Settings","§7Customize name, tag, description"),(pl,c)->settings(pl,svc,g,admin));
         m.slot(33,item(Items.BELL,"§bInvite a Player","§7Click and type their online username"),(pl,c)->invite(pl,svc,g,admin));
+        if(!admin){
+            m.slot(38,item(Items.WRITABLE_BOOK,"§aSend Guild Chat","§7Click and type a private guild message"),(pl,c)->ask(pl,"a guild chat message",(a,value)->{
+                if(!value.isBlank()&&value.length()<=250)svc.sendGuildChat(a,value);guild(a,svc,g,false);
+            }));
+            m.slot(39,item(Items.WRITABLE_BOOK,"§bSend Alliance Chat","§7Click and type an alliance message"),(pl,c)->ask(pl,"an alliance chat message",(a,value)->{
+                if(!value.isBlank()&&value.length()<=250)svc.sendAllianceChat(a,value);guild(a,svc,g,false);
+            }));
+            if(!g.isLeader(p.getUuid()))m.slot(41,item(Items.BARRIER,"§cLeave Guild","§7Requires confirmation"),(pl,c)->confirm(pl,"Leave "+g.name+"?",()->{svc.leave(pl);start(pl,svc);},()->guild(pl,svc,g,false)));
+            else m.slot(41,item(Items.BARRIER,"§cDisband Guild","§7This archives guild funds and items","§cIrreversible without administrator"),(pl,c)->confirm(pl,"Archive and disband "+g.name+"?",()->{
+                if(g.isLeader(pl.getUuid()))svc.disband(pl,false,g);start(pl,svc);
+            },()->guild(pl,svc,g,false)));
+        }
         if(admin){
             m.slot(48,item(Items.BARRIER,"§cAdmin View","§7Guild: "+g.name,"§7Leader: "+g.memberNames.getOrDefault(g.leader,"Unknown")),(pl,c)->{});
             if(g.closed)m.slot(50,item(Items.EMERALD,"§aRestore Archived Guild"),(pl,c)->confirm(pl,"Restore "+g.name+"?",()->{
@@ -156,6 +168,9 @@ public final class GuildGui {
         }else m.slot(53,item(Items.ARROW,"§7Close"),(pl,c)->pl.closeHandledScreen());
         m.open(p,(admin?"ADMIN · ":"")+g.name);
     }
+    public static void buffsMenu(ServerPlayerEntity p,GuildService svc){Guild g=svc.mine(p);if(g==null)start(p,svc);else buffs(p,svc,g,false);}
+    public static void questsMenu(ServerPlayerEntity p,GuildService svc){Guild g=svc.mine(p);if(g==null)start(p,svc);else quests(p,svc,g,false,0);}
+    public static void announcementMenu(ServerPlayerEntity p,GuildService svc){Guild g=svc.mine(p);if(g==null)start(p,svc);else announcement(p,svc,g,false);}
     private static void settings(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
         if(!can(p,svc,g,"manage_settings",admin))return;
         Menu m=new Menu(4);
@@ -320,6 +335,16 @@ public final class GuildGui {
             int priority=admin&&svc.isAdmin(pl,"cobbleguilds.admin.manage")?Integer.MAX_VALUE:(self==null?-1:self.priority);
             if(uuid.equals(pl.getUuid())||g.isLeader(uuid)||current==null||current.priority>=priority)return;
             g.members.remove(id);g.addAudit(pl.getUuid()+" kicked "+id);svc.store.save();members(pl,svc,g,admin,page);
+        },()->member(pl,svc,g,admin,id,page)));
+        if(g.isLeader(p.getUuid()) && !g.isLeader(uuid))m.slot(13,item(Items.NETHER_STAR,"§6Transfer Guild Leadership","§7Click to confirm transfer","§cYou will become a regular member"),(pl,c)->confirm(pl,"Transfer leadership to "+g.memberNames.getOrDefault(id,id)+"?",()->{
+            if(!g.isLeader(pl.getUuid()) || !g.contains(uuid) || pl.getUuid().equals(uuid))return;
+            g.members.put(pl.getUuidAsString(),g.defaultRank());g.members.put(id,"leader");g.leader=id;
+            g.addAudit(pl.getUuid()+" transferred leadership to "+id);svc.store.save();guild(pl,svc,g,admin);
+        },()->member(pl,svc,g,admin,id,page)));
+        if(admin && svc.isAdmin(p,"cobbleguilds.admin.moderation") && !g.isLeader(uuid))m.slot(16,item(Items.REDSTONE_BLOCK,"§cBan From Guild","§7Prevent joining until unbanned"),(pl,c)->confirm(pl,"Guild-ban "+g.memberNames.getOrDefault(id,id)+"?",()->{
+            if(!svc.isAdmin(pl,"cobbleguilds.admin.moderation"))return;
+            g.members.remove(id);g.pending.remove(id);g.invitations.remove(id);g.ordinaryInvites.remove(id);g.banned.add(id);
+            g.addAudit("ADMIN "+pl.getUuid()+" banned "+id);svc.store.save();members(pl,svc,g,admin,page);
         },()->member(pl,svc,g,admin,id,page)));
         m.slot(22,item(Items.ARROW,"Back"),(pl,c)->members(pl,svc,g,admin,page));m.open(p,"Guild Member");
     }

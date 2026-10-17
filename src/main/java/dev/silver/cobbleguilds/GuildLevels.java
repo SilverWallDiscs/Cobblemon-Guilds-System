@@ -18,6 +18,12 @@ public final class GuildLevels {
     public static int questReward(int target){
         return Math.max(25,Math.min(150,target/100));
     }
+    public static int questReward(String kind,int target){
+        // Treasury/deposit quests scale with the actual money raised, but never
+        // give one XP per dollar. Two hard 100K+ drives grant roughly four levels,
+        // not hundreds. Regular catch quests remain much smaller.
+        return "deposit".equals(kind)?Math.max(50,Math.min(1250,target/80)):questReward(target);
+    }
     public static void reconcile(Guild guild){
         if(guild.xpCurveVersion<1){
             // The former scheme awarded one XP per objective unit and was exploitable

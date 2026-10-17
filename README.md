@@ -1,6 +1,6 @@
 # Cobblemon Guilds System
 
-**Version:** `0.3.0-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
+**Version:** `0.3.1-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
 
 This alpha targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is installed **only on the dedicated server** (`fabric.mod.json` uses `"environment": "server"`). Players need only the normal client mods required by the server. It does not register client entrypoints, add HUDs, use bossbars, scoreboards or sidebars.
 
@@ -10,8 +10,8 @@ This alpha targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is inst
 
 - Open `/guilds` (or `/guild`). Create or browse guilds through vanilla chest menus.
 - Click **Name**, **Tag**, **Description**, **Announcement**, **Custom Bank Amount** or **Invite Player** to enter a **private one-shot chat prompt**. Type a response normally in chat; the message is intercepted and never broadcast. Type `cancel` to cancel. The relevant menu reopens after a successful response.
-- Create guilds without `/guild draft`: **this command has been removed**.
-- Use click-to-edit menus for rank priorities, rank default status and permissions, member ranks and kicks (with confirmation), applications, guild colors, settings and icons.
+- Create guilds without `/guild draft`: **this command has been removed**. Most gameplay command trees have been removed in favor of GUI controls. Minimal shortcuts remain: `/guilds`, `/guild`, `/guild home`, `/guild effects`, `/guild quests`, `/guild buffs`, `/guild announcement`, `/g`, `/ga`, `/guild admin`, `/guild chatspy`.
+- Use click-to-edit menus for rank priorities, rank default status and permissions, member ranks and kicks (with confirmation), applications, guild colors, settings, guild chat, leadership transfers and disbanding.
 - Access Guild Bank, Chest, Buff Shop and active effect timers, Quests, Bingo, Weekly Challenge, Achievements, Milestones, Bounties, Alliances, Experience and Home through the **Guild Main Menu**.
 - Staff use `/guild admin` to browse every guild with the guild's name and leader, inspect their data, and manage authorized settings **without joining the guild**.
 - `/guild home` actually teleports to the guild home; GUI Home offers teleport and setting the location. `/guild announcement` remains an optional shortcut, with announcement editing available in the menu.
@@ -22,7 +22,7 @@ This alpha targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is inst
 
 ## XP rebalance
 
-Previously quest XP was awarded equal to the target count, so a quest requiring a large currency deposit could cause hundreds of levels. Now each quest grants **25–150 XP**, Bingo line rewards are capped to 150 XP, and the threshold to reach level N is `125 × (N − 1) × N`. A pair of high-value quests cannot instantly produce hundreds of levels. Legacy XP is migrated **once** on next load (`old XP / 200`, capped at 2,500), after which normal XP accrues using the new curve. This migration deliberately changes guild levels; take a backup before upgrading.
+Previously quest XP was awarded equal to the target count, so a quest requiring a large currency deposit could cause hundreds of levels. Normal quests now grant **25–150 XP**, high-value treasury/deposit quests grant **50–1,250 XP**, Bingo line rewards are capped to 150 XP, and the threshold to reach level N is `125 × (N − 1) × N`. A pair of high-value quests cannot instantly produce hundreds of levels. Legacy XP is migrated **once** on next load (`old XP / 200`, capped at 2,500), after which normal XP accrues using the new curve. This migration deliberately changes guild levels; take a backup before upgrading.
 
 ## Buffs
 
