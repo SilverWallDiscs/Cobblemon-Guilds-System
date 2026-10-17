@@ -26,6 +26,10 @@ jobs:
             src/main/java/dev/silver/cobbleguilds/QuestCatalog.java \
             src/test/java/dev/silver/cobbleguilds/GuildDomainSelfTest.java
           java -cp /tmp/guildtests dev.silver.cobbleguilds.GuildDomainSelfTest
+      - name: Verify buff probability and overflow maths
+        run: |
+          javac -d /tmp/guildtests src/main/java/dev/silver/cobbleguilds/GuildBuffMath.java src/test/java/dev/silver/cobbleguilds/GuildBuffMathSelfTest.java
+          java -cp /tmp/guildtests dev.silver.cobbleguilds.GuildBuffMathSelfTest
       - name: Run build
         run: gradle --no-daemon clean build
       - name: Store build output
