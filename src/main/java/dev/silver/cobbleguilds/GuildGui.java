@@ -98,7 +98,7 @@ public final class GuildGui {
         menu.slot(11,item(Items.PLAYER_HEAD,"§bMembers","§7Members: "+g.members.size()),(pl,c)->members(pl,svc,g,admin));
         menu.slot(12,item(Items.GOLD_INGOT,"§6Guild Bank","§7Balance: $"+g.bank,"§7/guild bank deposit <amount>","§7/guild bank withdraw <amount>"),(pl,c)->bank(pl,svc,g,admin));
         menu.slot(13,item(Items.CHEST,"§eGuild Chest","§7"+(g.chestRows*9)+" slots"),(pl,c)->GuildMenus.openChest(pl,svc,g,admin));
-        menu.slot(14,item(Items.ENCHANTED_BOOK,"§dGuild Buffs","§7/guild effects","§7Real boosts are not enabled yet"),(pl,c)->GuildService.tell(pl,"Buff purchases are disabled until real Cobblemon hooks are verified."));
+        menu.slot(14,item(Items.ENCHANTED_BOOK,"§dGuild Buffs","§7/guild buffs","§7/guild effects","§7Buff purchases from bank"),(pl,c)->GuildBuffs.list(svc,pl));
         menu.slot(15,item(Items.BOOK,"§aQuests","§7/guild quest","§7/guild quest claim"),(pl,c)->quests(pl,svc,g,admin));
         menu.slot(16,item(Items.IRON_SWORD,"§fRanks","§7/guild role ..."),(pl,c)->ranks(pl,svc,g,admin));
         menu.slot(20,item(Items.WRITABLE_BOOK,"§eApplications","§7Pending: "+g.pending.size()),(pl,c)->pending(pl,svc,g,admin));
