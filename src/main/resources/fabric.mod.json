@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "cobbleguilds",
+  "version": "${version}",
+  "name": "Cobblemon Guilds System",
+  "description": "Server-side Cobblemon guilds with CobbleDollars, banks, guild chests, chat, quests and moderation.",
+  "authors": ["Silver"],
+  "license": "MIT",
+  "environment": "server",
+  "entrypoints": {"main": ["dev.silver.cobbleguilds.CobbleGuilds"]},
+  "depends": {
+    "minecraft": "1.21.1",
+    "fabricloader": ">=0.16.5",
+    "fabric-api": "*",
+    "cobbledollars": ">=2.0.0",
+    "cobblemon": ">=1.7.0"
+  },
+  "suggests": {"luckperms": "*"}
+}

@@ -1,0 +1,528 @@
+okay vamos a hacer un mod llamado Cobbleguilds dentro de esa carpeta basicamente actua asi la gente puede usar el comando /guilds para entrar a el menu de guild que sera una interfaz de cofre de 9 epacios (1 fila) en el podran ver botones que digan Buscar Guild y Crear Guild (Buscar guild le deja buscar entre guilds ya creadas) (crear guild te permite crear una guild por 1 millon de Cobbledolars)
+
+1) Al darle a crear guild se le abrirá una interfaz de cofre 36 espacios (4 filas) la cual te deja Cambiar el nombre con un máximo de caracteres de la guild seleccionar un icono de la guild que default es un item etiqueta y solo le pones el item en el slot de la etiqueta para remplazar el item sin que el usuario pierda ese item y le puede poner si es publico o por aceptación 
+	-En caso de que lo haga publico la gente podrá unirse sin problema
+	-En caso que sea por aceptación la gente deberá mandar una solicitud para entrar el cual luego cuando ya este creado el creador (o cualquiera que tenga permisos en la guild) pueda ver las solicitudes
+Elegir el color de el team.. minecraft usa un sistema de colores con el símbolo de colores § aveces es & la idea es que cuando seleccionen la opción color les aparezca un sub menú donde le deje seleccionar el color sin perder los datos que estaba creando en el menú anterior y en este menú ver varios bloques de colores el cual representen el color por ejemplo un color concreto rojo es §c que en minecraft §c es color Red o algo asi luego al seleccionar el color vuelva al menú donde estaba creando el team con el nombre de la guild del color seleccionado
+tambien esta la opción para poner clan tag que es máximo 4 caracteres
+la idea es que este tag aparezca detrás de cuando un jugador habla tipo cuando hablo en minecraft es "[Rango]Einrain: Hola" puse rango por que aveces servidores ponen el rango de la perso si de tag le pongo SWD aparezca en el mensaje "[Rango] [SWD] Einrain: Hola" y asegúrate de que el tag sea del color el cual se selecciono previamente
+y por ultimo una descripción el cual le aparezca un libro para editar el cual tomara solo la primera pagina como descripción de la guild en el podras poner colores tipo &3En esta &2guild &3se podrá hacer de todo y luego se vera reglejado en la guild como descripción y la gente al buscar la guild vera el item el nombre y la descripción y al entrar se le dará el tag para cuando hable en el chat
+
+
+
+2) en el sistema hay varias cosas 
+-Settings to reconfigure logo, name, color, tag etc...
+
+-Guild chest (que inicialmente te abrirá un cofre de 9 espacios) y solo lo podrán abrir los que tengan el permiso para abrir guild chest (asegúrate que sea un cofre normal de minecraft para que la gente no pueda duplicar objetos) este se podrá mejorar en espacios de 9 en 9 hasta tener el máximo que seria como un cofre doble (y al mejorar que no se pierdan los objetos puestos y que no se pueda duplicar de esta manera)
+
+-Bank el cual la gente podrá meter cobbledolars (asegúrate de que no puedan poner números negativos y integrers gigantes que hagan el numero negativo.. tampoco mas de lo que ya tienen) cualquiera puede depositar dinero en el bank de la guild pero solo los que tienen permiso pueden retirarlo (por cierto para mantener la guild esta debe ser pagada a menudo cada cambio de dia de la hora del server tipo a las 00:00 se quitara una cantidad de 10k cobbledolars para mantener el grupo en caso de que no se pague la guild se cerrara y siempre antes de que esto ocurra tipo 10 mins mandara un mensaje al servidor oviamente en ingles diciendo Gholdengo is about to come around to collect the daily guild maintenance fees! Make sure you have the exact amount of CobbleDollars ready! después en 5 minutos luego en 1 minuto antes y luego un mensaje que diga Gholdengo has finished collecting the daily guild maintenance fees! All guilds that failed to pay have now been disbanded) igualmente que en la config esto puede que no sea necesario agregar en la config algo como "Daily fee: True or false (que default vaya en true) al igual algo como Daly fee Price: 10000 default 10k cobbledolars y lo puede cambiar y se vea reflejado en la interfaz"
+
+-Buffs aquí una lista de efectos que se puedan comprar
+Shiny Luck x2	1 hora	$1M
+Shiny Luck x3	1 hora	$3M
+Rare Spawn Boost x2	1 hora	$1.5M
+Hidden Ability Luck x2	1 hora	$2M
+Alpha Spawn Luck x2	1 hora	$2M
+Catch Rate x1.5	Permanent	$500K
+Catch Rate x2 1 hora 3M
+Pokémon EXP x2	1 hora	$750K
+EV Training x2	1 hora	$800K
+Friendship Gain x2	1 hora	$400K
+Guild Chest upgrade (este es especial quiero que vaya acendiendo la primera extra fila 100k luego otra 500k luego otra fila 1millon y 3 millones) 
+que estos sean efectos de la guild (osea que todos los miembros de la guild se les aplique el effecto)
+y sean stackeables de tiempo tipo compro shiny luck x3 1 hora por 3 millones y luego decido que no es suficiente y se me esta acabando y le quedan 30 mins.. lo compro de nuevo y sube a 1 hora 30 mins.. ósea que si lo compro 10 veces desde el inicio tendría 10 horas y que haya un comando /guild effects para ver  los efectos de la guild activos
+pd: solo los miembros con el permiso para comprar buffs pueden comprar buffs para la guild
+
+
+
+-Ranks aquí se pueden crear rangos para los usuarios dentro de la guild que default el usuario que creo la guild seria Leader y el otro rango default será Member el cual será el rango default para los miembros que se unan luego podras crar tus propios rangos o incluso modificar los nombres como Member a otro nombre tipo New el cual se vera reflejado en los miembros al entrar o se les modificara a los que ya esten en este rango
+puedes crear un rango y ponerle el nombre que quieras máximo 12 caracteres
+luego el leader puede seleccionar el rango y cambiarle los permisos
+dentro de los permisos estarán los que mencionamos anteriormente en las otras opciones y estos que mencionare
+-Default: False/True (en este caso solo 1 rol puede tener default true si le pones True este se vuelve el rango default el cual se le da a miembros al entrar y siempre debe haber 1 activo no puede haber mas de 1 al poner true en cualquiera el anterior rango que lo tenia en true pasa a false y el nuevo pasa a estar en true.. y no se puede poner en false manualmente para evitar que default no exista)
+
+	>Priority: (1,2,3,4 etc..) en este caso al crear rangos puedes asignarle una prioridad mientras mas grande el numero mayor será prioridad y el leader tendrá su propia prioridad que en vez de un numero sea prioridad Leader y este no se puede modificar
+
+	>Manage ranks: True/false: (en caso de que sea True el usuario con este permiso puede modificar los roles cambiando entre true o false los rango creando rangos y modificándolos pero no puede ni modificar su propio rango ni crear rangos con mas priority ni permisos de el que este rango ni crear un rango superior al de su propia priority)
+
+	>Kick: True/False (permiso para kickear de la guild pd no podrá kickear gente con mayor prioridad de rango)
+
+	>Manage Pending(no se como llamarlo): True/false (permiso para ver las solicitudes de miembros que quieran entrar al igual que invitar gente directamente) pd todo el mundo puede invitar con /guild invite "Nombre del usuario" a la guild pero cuando accepten entraran a la lista de gente que quiere entrar a la guild y tendrán que ser aceptados por alguien con este permiso (en caso de que alguien tenga este permiso puede invitar saltándose la lista de solicitudes)
+
+	>cualquier otra cosa que se me haya escapado agregala pero creo que puse la base
+
+	>puntos importantes el leader no puede modificar el rango leader ya que este siempre tendrá todos los permisos puede cambiar el nombre del rango pero no permisos ya que sigue siendo el rol leader
+
+-Members aquí puedes entrar a una opción donde veras la cabeza de todos los miembros del grupo y su rol y la cantidad de cobbledolars que tienen.. en caso de que tengas los permisos correctos puedes asignarle rol a las personas al igual que kickearlas con el respectivo permiso recuerda que no se puede cikcear a los que tengan un rango mayor que el que tengas y no puedes kickearte a ti mismo ni gente con tu mismo rango.. puedes ver la cantidad de cobbledolars si pones el maus encima...
+
+-Una perk que no necesariamente esta en la interfaz es que puedes poner /g Hello guys y solo los miembros de la guild verán este mensaje tipo [Guild] Einrain: Hello guys
+
+-Quests (Misiones cooperativas de la Guild)
+
+Quiero que las guilds tengan un sistema de misiones cooperativas donde todos los miembros puedan contribuir a un objetivo común y recibir recompensas individuales por participar.
+
+En el menú principal de la guild habrá una opción llamada "Quests" que abrirá una interfaz de cofre de 54 espacios (6 filas). Aquí los jugadores podrán ver las misiones disponibles, su progreso, las recompensas, el tiempo restante y cuánto ha contribuido cada miembro.
+
+Las misiones no serán individuales. El objetivo principal será compartido por toda la guild.
+
+Ejemplo de funcionamiento
+
+Quest: Pokémon Collector
+
+Objetivo: Capturar 100 Pokémon entre todos los miembros.
+
+Progreso compartido: 0/100.
+
+Contribución mínima: Capturar al menos 5 Pokémon.
+
+Recompensa: 5 Rare Candies para cada miembro que haya contribuido al menos 5 capturas.
+
+Duración: 24 horas.
+
+Por ejemplo, si Einrain captura 40 Pokémon, Silver captura 35 y Alex captura 25, la guild habrá conseguido 100/100 y la misión estará completada.
+
+Sin embargo, solamente los miembros que hayan capturado al menos 5 Pokémon podrán recibir la recompensa.
+
+Si otro jugador capturó solamente 3 Pokémon, habrá contribuido al progreso general, pero no recibirá los Rare Candies.
+
+Las recompensas deben ser individuales. No se entrega una sola recompensa a toda la guild.
+
+Tipos de quests
+
+Quiero que existan diferentes misiones que puedan aparecer de manera aleatoria:
+
+Capturas
+
+Pokémon Collector
+
+Capturar 100 Pokémon.
+
+Participación mínima: 5 capturas.
+
+Recompensa: 5 Rare Candies por jugador.
+
+Water-type Expedition
+
+Capturar 50 Pokémon de tipo Water.
+
+Participación mínima: 3 capturas.
+
+Recompensa: 3 Rare Candies por jugador.
+
+Type Specialist
+
+Capturar 75 Pokémon de un tipo aleatorio (Fire, Grass, Psychic, etc.).
+
+Participación mínima: 5 capturas.
+
+Recompensa: 5 Rare Candies.
+
+Shiny Hunters
+
+Capturar 3 Pokémon shiny entre todos.
+
+Participación mínima: 1 shiny.
+
+Recompensa: 10 Rare Candies para los participantes elegibles.
+
+Alpha Hunters
+
+Capturar 10 Pokémon Alpha.
+
+Participación mínima: 1 captura.
+
+Recompensa: 8 Rare Candies.
+
+Pokédex Expedition
+
+Capturar 50 especies diferentes entre todos.
+
+Una misma especie solamente cuenta una vez para el objetivo de la guild.
+
+Participación mínima: 3 especies nuevas.
+
+Recompensa: 6 Rare Candies.
+
+Combates y entrenamiento
+
+Battle Together
+
+Derrotar 200 Pokémon salvajes.
+
+Participación mínima: 10 derrotas.
+
+Recompensa: 5 Rare Candies.
+
+Training Day
+
+Subir de nivel a Pokémon un total de 100 veces entre los miembros.
+
+Participación mínima: 5 subidas de nivel.
+
+Recompensa: 5 Rare Candies.
+
+Evolution Masters
+
+Evolucionar 30 Pokémon.
+
+Participación mínima: 2 evoluciones.
+
+Recompensa: 6 Rare Candies.
+
+Competitive Spirit
+
+Ganar 15 combates PvP entre todos los miembros.
+
+Participación mínima: 2 victorias.
+
+Recompensa: 8 Rare Candies.
+
+Evitar abusos mediante combates repetidos contra la misma persona.
+
+Otras actividades
+
+Guild Fundraiser
+
+Depositar un total de 100,000 CobbleDollars en el banco de la guild.
+
+Participación mínima: 5,000 CobbleDollars.
+
+Recompensa: 3 Rare Candies por participante.
+
+El dinero depositado permanece en el banco de la guild.
+
+No deben contar como contribución nuevos depósitos del mismo dinero retirado anteriormente.
+Daily & Weekly Quests
+
+Cada guild tendrá:
+
+2 Daily Quests que se renuevan cada día a las 00:00 de la zona horaria configurada del servidor.
+
+1 Weekly Quest que se renueva cada 7 días.
+
+Las misiones diarias tendrán objetivos más pequeños.
+
+Las semanales serán considerablemente más difíciles y ofrecerán recompensas superiores.
+
+Cada quest tendrá un temporizador visible en el lore del item.
+Por ejemplo:
+
+Pokémon Collector
+
+Progress: 65/100 Pokémon
+Your Contribution: 12/5
+Reward: 5 Rare Candies
+Time Remaining: 06h 32m
+Status: In Progress
+
+Cuando la guild complete la misión, todos los miembros recibirán un mensaje:
+
+"Your guild has completed the Pokémon Collector quest! Claim your rewards in /guild quests"
+y quiero que aparezca la mayor contribución tipo
+Por ejemplo:
+
+Einrain: 40 Pokémon (10k Cobbledolars extra)
+Silver: 35 Pokémon (5k Cobbledolars extra)
+Alex: 25 Pokémon (3k Cobbledolars extra)
+MUY IMPORTANTE:
+
+No contar Pokémon obtenidos mediante intercambios, comandos administrativos o modificaciones de datos como capturas.
+
+Solo contar capturas legítimas realizadas durante la quest activa.
+
+No permitir que liberar un Pokémon y recuperarlo mediante intercambio genere progreso.
+
+Las evoluciones deben contabilizarse solamente cuando realmente se complete una evolución.
+
+Los combates PvP deberán tener mecanismos contra el farming entre cuentas alternativas.
+
+Las contribuciones deben guardarse de manera persistente.
+
+Reiniciar el servidor no debe reiniciar las quests ni sus temporizadores.
+
+Un jugador que salga de la guild no podrá seguir contribuyendo a sus quests.
+
+Si una guild se disuelve, las quests activas se cancelarán.
+
+Si una misión expira sin completarse, no se podrán reclamar sus recompensas.
+
+Las recompensas ya obtenidas deben guardarse para evitar duplicaciones.
+
+Las recompensas jamás deben poder obtenerse moviendo items decorativos desde las interfaces.
+
+Cada quest tendrá identificadores únicos para impedir que se entreguen premios duplicados.
+
+Si el usuario se desconecto pero aporto lo nesesario podrá reclamar su recompesa luego que vuelva a conectarse
+
+Configuración
+
+Todas las quests deben estar definidas en archivos de configuración editables.
+Quiero poder crear nuevas misiones sin tener que recompilar el mod, utilizando los tipos de objetivos ya implementados.
+Cada quest podrá configurar:
+
+ID
+
+Nombre
+
+Descripción
+
+Icono
+
+Tipo de objetivo
+
+Cantidad necesaria
+
+Participación mínima
+
+Tipo de quest (Daily/Weekly)
+
+Duración
+
+Recompensas
+
+Peso de aparición aleatoria
+
+Activado (True/False)
+
+Los administradores también podrán activar o desactivar todo el sistema de quests mediante la configuración.
+
+
+Los administradores tendrán comandos separados para renovar, asignar, completar o reiniciar una quest con fines de administración y pruebas.
+
+Todas las interfaces, mensajes y nombres que vean los jugadores deben estar en inglés, aunque las instrucciones de desarrollo estén escritas en español.
+
+Los miembros autorizados pueden gastar CobbleDollars del banco para mejorar la guild permanentemente.
+Por ejemplo, aumentar el Guild Chest de 9 a 27 y luego 54 espacios, o ampliar el límite de miembros.
+
+Guild Leaderboards
+Clasificaciones de las mejores guilds del servidor por experiencia, Pokémon capturados, misiones completadas y actividad semanal.
+Comando: /guild top
+
+Guild Home
+Permitir que los miembros autorizados establezcan una ubicación compartida para su guild.
+Comandos: /guild sethome y /guild home, con cooldown y restricciones configurables por los administradores.
+
+además de
+Guild Bingo	Tablero semanal de 3×3 con retos que los miembros completan juntos.
+Guild Streaks	Recompensas por completar quests durante varios días consecutivos.
+Guild Challenges	Competencias semanales entre guilds por capturas, evoluciones o victorias.
+Guild Alliances	Permitir alianzas entre guilds, con chat compartido opcional.
+Guild Milestones	Premios colectivos al alcanzar 100, 500, 1,000 o más capturas.
+Guild Bounties	Contratos especiales para capturar ciertas especies de Pokémon.
+Guild Announcements	Líderes y oficiales pueden publicar anuncios dentro de la guild.
+
+2. Los rangos. Agregaría permisos llamados Manage Guild Settings, Manage Guild Bank, Manage Guild Chest, Purchase Buffs, Manage Members, Manage Applications, Manage Guild Home y Manage Guild Upgrades. Además, un sistema seguro para transferir el liderazgo el cual se base en seleccionar a un miembro y poner transferir leader y caundo lo apretas te aparece un libro con el mensaje are you sure you want to do This if so tipe "Im Sure" and close the book.
+
+Las guilds disueltas. Es importante definir qué ocurre con el dinero restante, los objetos del Guild Chest y las recompensas pendientes cuando Gholdengo disuelve una guild. Recomiendo una recuperación segura para el líder y que los elementos nunca se dupliquen.
+
+4. Escalabilidad. Las guilds podrían tener un límite inicial de 10 miembros, ampliable mediante upgrades. También sería bueno configurar cuántas quests y buffs pueden estar activos simultáneamente.
+
+5. Rendimiento y persistencia. Como será un mod de servidor, conviene procesar el progreso mediante eventos de Cobblemon en vez de revisar constantemente los Pokémon de todos los jugadores. Los cobros, compras y recompensas deben ser operaciones seguras ante reinicios y fallos.
+
+-Admin Commands & Moderation
+
+All administrative commands must be restricted to players with the corresponding LuckPerms permission or Minecraft operators (OP level 4).
+
+LuckPerms integration should be optional. The mod must work without LuckPerms installed, allowing server operators to access administrative commands.
+
+1. /guild admin
+
+Opens an administrative GUI displaying all guilds registered on the server.
+
+Administrators should be able to browse and search guilds by name, tag, or leader.
+
+When an administrator selects a guild, they can access its entire management interface as if they were its leader, with full administrative privileges.
+
+Administrators must be able to:
+
+View and modify guild information, including name, tag, description, icon, color, and privacy settings.
+
+View, add, remove, and manage guild members.
+
+Invite players directly into any guild, bypassing application requirements.
+
+View and modify guild ranks and permissions.
+
+Access and manage the guild bank, including adding or removing CobbleDollars.
+
+Access and modify the guild chest.
+
+Purchase, activate, deactivate, and manage guild buffs.
+
+Inspect, reset, or complete guild quests.
+
+Modify guild levels, experience, and upgrades.
+
+View pending membership applications.
+
+Transfer guild leadership.
+
+View guild activity logs.
+
+Force guild maintenance payments or waive them.
+
+Disband a guild with a confirmation menu.
+
+Important: Administrators must not automatically become actual members of the guild they are managing. Administrative access should not change their current guild, chat tag, or membership.
+
+All administrative modifications should be saved immediately and recorded in an audit log.
+
+Destructive operations must require confirmation.
+
+2. /guild chatspy
+
+Toggles Guild Chat Spy on or off for the administrator executing the command.
+
+When enabled, the administrator can read all private guild chat messages across the server, including messages sent through /g <message>.
+
+Example:
+
+[GuildSpy] [SWD] Einrain: Hello everyone!
+
+[GuildSpy] [COZY] Silver: Anyone available for a battle?
+
+Administrators should see messages from every guild without needing to join them.
+
+Requirements:
+
+Only authorized staff members can enable Guild Chat Spy.
+
+Chat Spy is disabled by default.
+
+Each administrator can enable or disable it independently.
+
+Messages must display the guild name or tag and the sender.
+
+Spy messages must not be visible to regular players.
+
+Enable/disable actions must be recorded in the administrative logs.
+
+The administrator's Chat Spy preference should persist across reconnects.
+
+Guild Chat Spy should not interfere with normal guild chat functionality.
+
+Messages:
+
+Enabled: "Guild Chat Spy enabled. You can now monitor guild conversations."
+
+Disabled: "Guild Chat Spy disabled. You will no longer receive guild messages."
+
+3. Guild Moderation Commands
+
+Administrators should also have moderation tools to deal with players violating server rules.
+
+/guild admin kick <guild> <player> [reason]
+
+Removes a player from a specific guild, regardless of their rank.
+
+/guild admin ban <guild> <player> [reason]
+
+Bans a player from a specific guild, preventing them from joining again through invitations, applications, or public joining.
+
+/guild admin unban <guild> <player>
+
+Removes a player's ban from the specified guild.
+
+/guild admin bans <guild>
+
+Opens a GUI displaying all players banned from that guild, including ban reasons and the administrator responsible.
+
+/guild admin logs <guild>
+
+Opens the administrative activity history for the specified guild.
+
+Guild bans are separate from server-wide bans. Server-wide punishments should remain handled by Minecraft's existing moderation commands or the server's moderation plugins.
+
+4. LuckPerms Permissions
+
+Administrative functionality must support these permission nodes:
+
+Permission
+
+Description
+
+cobbleguilds.admin
+
+Full administrative access
+
+cobbleguilds.admin.gui
+
+Open the administration GUI
+
+cobbleguilds.admin.manage
+
+Modify guilds and members
+
+cobbleguilds.admin.bank
+
+Modify guild bank balances
+
+cobbleguilds.admin.quests
+
+Manage guild quests
+
+cobbleguilds.admin.buffs
+
+Manage guild buffs
+
+cobbleguilds.admin.moderation
+
+Kick and ban guild members
+
+cobbleguilds.admin.logs
+
+View administrative logs
+
+cobbleguilds.admin.chatspy
+
+Access Guild Chat Spy
+
+Players with cobbleguilds.admin should automatically have access to all administrative functions.
+
+Minecraft operators with OP level 4 should also have full access, regardless of LuckPerms permissions.
+
+All permission checks must be performed server-side, including commands, GUI actions, and inventory interactions. Unauthorized players must never be able to bypass restrictions through modified clients or inventory exploits.
+
+5. Administrative Activity Logs
+
+Every important administrative action must be logged, including:
+
+Administrator username and UUID.
+
+Guild affected.
+
+Action performed.
+
+Previous and new values, when applicable.
+
+Date and time.
+
+Reason, when provided.
+
+Example:
+
+[AdminLog] Silver modified guild SWD's bank balance: $500,000 → $1,000,000.
+
+[AdminLog] Silver banned Player123 from guild COZY. Reason: Harassment.
+
+Logs must persist across server restarts and must only be accessible to authorized staff.
+
+6. Additional Requirements
+
+All administrative menus must work using Minecraft chest GUIs.
+
+Server operators must be able to recover or manage guilds whose leader has become inactive.
+
+Administrative actions should bypass normal guild rank restrictions only when the administrator has the corresponding permission.
+
+Administrators should be able to inspect a guild without changing its members' permissions or roles.
+
+Regular players must never see administrative buttons.
+
+Every command must have appropriate tab completion and permission checks.
+
+All player-facing messages and GUI text must be in English.
+
+Administrative access, Chat Spy, and moderation commands must be configurable and enabled by default for authorized staff only.
+
+

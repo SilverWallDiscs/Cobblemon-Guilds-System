@@ -1,0 +1,35 @@
+plugins {
+    id 'fabric-loom' version "${loom_version}"
+    id 'maven-publish'
+}
+version = project.mod_version
+group = project.maven_group
+base { archivesName = project.archives_base_name }
+repositories {
+    maven { url = 'https://www.cursemaven.com' }
+    maven { url = 'https://maven.nucleoid.xyz' }
+    mavenCentral()
+}
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    mappings "net.fabricmc:yarn:${yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+    // Match the API used by the author's existing CobbleDollars PlayerShops project.
+    modCompileOnly "curse.maven:cobbledollars-859232:6604561"
+    // Cobblemon 1.7.x: native capture hooks. The loaded version must match API compatibility.
+    modCompileOnly "curse.maven:cobblemon-687131:7247586"
+}
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
+}
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = 'UTF-8'
+}
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+    withSourcesJar()
+}

@@ -13,7 +13,7 @@ A **dedicated-server-only** Fabric mod for **Minecraft 1.21.1**, written for the
 - GUI buttons use normal Minecraft chest containers and server-side click handling.
 - Guild effects are queried through **`/guild effects`**, never a persistent overlay.
 - The mod is designed so clients **do not install CobbleGuilds** (Cobblemon/CobbleDollars themselves may have their own client requirements).
-- Guild chat is explicit via `/g <message>`; normal global-chat tag decoration is not yet implemented.
+- Guild chat is explicit via `/g <message>`. Signed chat decoration prefixes ordinary messages with a colored `[TAG]` through Fabric’s server message decorator; verify formatting alongside your server rank/chat mods.
 
 ## Implemented in source (not yet runtime verified)
 
@@ -95,3 +95,21 @@ Closed guilds remain stored with their bank and item data. Staff recovery is sti
 `src/test/java/dev/silver/cobbleguilds/GuildDomainSelfTest.java` is a zero-dependency smoke test of role limits, guild status, big balances, cooperative quest threshold and single-claim behavior. It does **not** replace integration tests against a dedicated Fabric server.
 
 No third-party Cobblemon or CobbleDollars source is copied into the mod. Those APIs are compile-only dependencies.
+
+
+## Additional source changes (alpha.2, not runtime verified)
+
+- `/guild stats`, `/guild announcement [set <message>]`, `/guild sethome`, `/guild home` (configurable cooldown), `/guild upgrade members` (+5 slots for a guild-bank fee).
+- `/guild leader transfer <player>` followed by `/guild leader confirm ImSure` within 60 seconds; the existing leader is assigned the default member rank. This is a **text confirmation**; requested interactive book confirmation is not implemented yet.
+- `/guild settings color <&code>` and `/guild settings icon` (item in main hand is not consumed).
+- `/guild admin invite <guild> <player>`, `/guild admin bank <guild> <signed amount>`, `/guild admin bans <guild>`, `/guild admin restore <guildUUID>`.
+- New daily/weekly capture/deposit quest rotation, with anti-recycle bank quest contribution limited to net-new treasury highs, plus a basic streak counter.
+- CI workflow requests a Java 21 Fabric build on GitHub Actions; **a passing workflow is required before distributing a JAR**.
+
+### Remaining high-priority limitations
+
+- Real Cobblemon guild-buff multipliers **are not implemented and cannot be purchased**. They must not charge users until actual server-side hooks have been tested. `/guild effects` remains informational only.
+- Complex capture filters (shiny, species, types, alpha), evolution/EXP/PvP and fishing quests are not counted yet. Only actual capture events and net-new bank deposits are counted.
+- GUI book editing, complete rank-permission GUI, live admin screens, offline-user moderation, escrow withdrawal after disbandment, PvP anti-farming and guild bingo/alliances remain pending.
+- CobbleDollars fund transfers and item delivery require integration/crash-recovery tests before live use. This is not ready for a production economy.
+- Local environment had no Gradle binary or Gradle dependency downloads; only pure Java domain tests were run here.
