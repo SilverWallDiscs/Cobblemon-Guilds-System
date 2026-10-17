@@ -516,7 +516,7 @@ public final class GuildGui {
             m.slot(places[i],questItem(p,q),(pl,c)->questDetail(pl,svc,g,admin,q,()->bingo(pl,svc,g,admin)));
         }
         m.slot(4,item(Items.MAP,"§dWeekly Guild Bingo","§7Complete lines of three","§7Bonus XP per line: "+Math.min(150,svc.config.bingoLineExperience)),(pl,c)->{});
-        if(!admin)m.slot(49,item(Items.CHEST,"§aClaim Rewards"),(pl,c)->{svc.claim(pl);bingo(pl,svc,g,admin);});
+        if(!admin)m.slot(47,item(Items.CHEST,"§aClaim Rewards"),(pl,c)->{svc.claim(pl);bingo(pl,svc,g,admin);});
         m.slot(49,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Guild Bingo");
     }
     private static String questGoal(Guild.Quest q){return switch(q.kind){
@@ -541,8 +541,8 @@ public final class GuildGui {
         }
         if(page>0)m.slot(45,item(Items.ARROW,"Previous"),(pl,c)->quests(pl,svc,g,admin,page-1));
         if(from+45<list.size())m.slot(53,item(Items.ARROW,"Next"),(pl,c)->quests(pl,svc,g,admin,page+1));
-        if(!admin)m.slot(49,item(Items.CHEST,"§aClaim Pending Rewards"),(pl,c)->{svc.claim(pl);quests(pl,svc,g,admin,page);});
-        m.slot(52,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Daily & Weekly Quests");
+        if(!admin)m.slot(47,item(Items.CHEST,"§aClaim Pending Rewards"),(pl,c)->{svc.claim(pl);quests(pl,svc,g,admin,page);});
+        m.slot(49,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Daily & Weekly Quests");
     }
     private static void questDetail(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin,Guild.Quest q,Runnable back){
         Menu m=new Menu(6);m.slot(4,questItem(p,q),(pl,c)->{});int slot=9;

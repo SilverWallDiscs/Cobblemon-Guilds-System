@@ -1,6 +1,6 @@
 # Cobblemon Guilds System
 
-**Version:** `0.4.0-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
+**Version:** `0.4.1-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
 
 This alpha targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is installed **only on the dedicated server** (`fabric.mod.json` uses `"environment": "server"`). Players need only the normal client mods required by the server. It does not register client entrypoints, add HUDs, use bossbars, scoreboards or sidebars.
 
@@ -54,7 +54,7 @@ Admin menu: `/guild admin`. Chat monitoring: `/guild chatspy` (OP 4 or correspon
 - Menus are server-side chests, not a graphical custom client screen. Offline skins may require a real profile texture cache; this alpha uses known/online profiles.
 - Archived guilds can never be restored. See `docs/ADMIN_CONFIG_ARCHIVES.md` for archive-only administration, NBT-backed custom modded item quest rewards, menu-based configuration and permanent deletion safeguards.
 
-## 0.4.0-alpha: Admin Configuration and Permanent Archives
+## 0.4.1-alpha: Admin Configuration and Permanent Archives
 
 - `/guild admin` opens separate **Active Guilds**, **Disbanded Guilds** and **Guild Configuration** areas. The archive viewer reveals former leader/member records, chest, bank and audit. Guilds are permanently disbanded, never restorable; staff can delete one or all archived guilds using two confirmations.
 - `/guild config` lets OP 4 or `cobbleguilds.admin.config` manage quest types, targets and reward items, Bingo settings, daily/weekly quest counts, buffs and bank prices. Admin clicks with a held item to clone its entire ItemStack, including modded components, into the quest reward config.
