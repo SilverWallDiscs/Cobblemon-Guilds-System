@@ -39,6 +39,7 @@ public final class GuildChest {
     private Path file(String id){return store.root().resolve("chest-"+id+".nbt");}
     public void saveAll(){loaded.values().forEach(this::save);}
     private void save(ChestInventory inv){
+        if(store.byId(inv.id)==null && store.archived(inv.id)==null)return;
         try {
             NbtCompound data=new NbtCompound();
             NbtList items=new NbtList();
@@ -61,6 +62,6 @@ public final class GuildChest {
         final String id;
         boolean loading;
         ChestInventory(String id){super(54);this.id=id;}
-        @Override public void markDirty(){super.markDirty();if(!loading)save(this);}
+        @Override public void markDirty(){super.markDirty();if(!loading && (store.byId(id)!=null || store.archived(id)!=null))save(this);}
     }
 }

@@ -112,8 +112,8 @@ public final class GuildService {
     public void disband(ServerPlayerEntity p,boolean admin,Guild g){
         if(g==null){tell(p,"Guild not found.");return;}
         if(!admin&&!g.isLeader(p.getUuid())){tell(p,"Only the guild leader can disband it.");return;}
-        g.closed=true;g.addAudit(p.getName().getString()+" disbanded guild. Chest and funds preserved for administrative recovery.");store.save();
-        tell(p,"Guild disbanded. Remaining bank and chest contents are preserved for admin recovery.");
+        store.disband(g,p.getName().getString()+" disbanded guild. Remaining assets retained for archived admin access.");
+        tell(p,"Guild permanently disbanded. Its history and remaining assets are retained for staff inspection only.");
     }
     public void bankDeposit(ServerPlayerEntity p,BigInteger amount){
         Guild g=mine(p);
@@ -128,7 +128,8 @@ public final class GuildService {
     }
     public void bankWithdraw(ServerPlayerEntity p,BigInteger amount,boolean admin,Guild g){
         if(g==null){tell(p,"Guild not found.");return;}
-        if(!(admin && isAdmin(p,"cobbleguilds.admin.bank")) && !authorized(p,g,"bank_withdraw",admin)){
+        if(g.closed && store.archived(g.id)!=g){tell(p,"Archived guild not found.");return;}
+        if(!(admin && isAdmin(p,"cobbleguilds.admin.bank")) && !(!g.closed&&authorized(p,g,"bank_withdraw",admin))){
             tell(p,"No bank withdrawal permission.");return;
         }
         BigInteger previous=g.funds();
@@ -192,7 +193,7 @@ public final class GuildService {
         String week=now.get(WeekFields.ISO.weekBasedYear())+"-W"+now.get(WeekFields.ISO.weekOfWeekBasedYear());
         long dailyEnd=now.toLocalDate().plusDays(1).atStartOfDay(zone()).toInstant().toEpochMilli();
         long weeklyEnd=now.toLocalDate().plusDays(8-now.getDayOfWeek().getValue()).atStartOfDay(zone()).toInstant().toEpochMilli();
-        QuestCatalog.refresh(g, day, week, dailyEnd, weeklyEnd, config.bingoEnabled);
+        QuestCatalog.refresh(g, day, week, dailyEnd, weeklyEnd, config.bingoEnabled,config.bingoRewardItemId,config.bingoRewardItemData,config.bingoRewardCount,config.dailyQuestCount,config.weeklyQuestCount);
         g.quests.entrySet().removeIf(e -> !e.getValue().completed && e.getValue().expiresAt < System.currentTimeMillis() - 172800000L);
         // Completed quests are retained for 7 days after expiry so returning contributors can claim.
         g.quests.entrySet().removeIf(e -> e.getValue().completed && e.getValue().expiresAt < System.currentTimeMillis() - 604800000L);
@@ -302,13 +303,19 @@ public final class GuildService {
     public void claim(ServerPlayerEntity p){
         Guild g=mine(p);if(g==null){tell(p,"You are not in a guild.");return;}
         boolean paid=false;
-        Item rare=Registries.ITEM.get(Identifier.of("cobblemon","rare_candy"));
-        if(rare==net.minecraft.item.Items.AIR){tell(p,"Rare Candy item not found; rewards kept pending.");return;}
         for(Guild.Quest q:g.quests.values()){
             if(!q.eligible(p.getUuid()))continue;
-            ItemStack candy=new ItemStack(rare,q.candies);
-            if(!canFit(p,candy) || !p.getInventory().insertStack(candy)){
+            ItemStack reward;
+            try { reward=GuildRewardCodec.decode(server.getRegistryManager(),q.rewardItemData,q.rewardItemId,
+                q.rewardCount>0?q.rewardCount:Math.max(1,q.candies)); }
+            catch(RuntimeException ex){tell(p,"Quest reward is invalid or its mod is missing. Your reward remains unclaimed.");
+                CobbleGuilds.LOG.warn("Invalid quest reward for guild {} quest {}",g.id,q.id,ex);break;}
+            String rewardName=reward.getName().getString();int quantity=reward.getCount();
+            if(!canFit(p,reward)){
                 tell(p,"Make room in your inventory before claiming rewards.");break;
+            }
+            if(!p.getInventory().insertStack(reward)){
+                tell(p,"Reward delivery failed; claim was NOT consumed.");break;
             }
             // Claimed state recorded before the optional currency bonus.
             q.claimed.add(p.getUuidAsString());store.save();
@@ -318,7 +325,7 @@ public final class GuildService {
             for(int i=0;i<rank.size();i++)if(rank.get(i).getKey().equals(p.getUuidAsString())){place=i;break;}
             int bonus=place==0?q.extraMoneyForFirst:place==1?q.extraMoneyForSecond:place==2?q.extraMoneyForThird:0;
             if(bonus>0)money.credit(p,BigInteger.valueOf(bonus));
-            tell(p,"Claimed "+q.candies+" Rare Candies"+(bonus>0?" and $"+bonus+" top contributor bonus":"")+" for "+q.name+"!");
+            tell(p,"Claimed "+quantity+"x "+rewardName+(bonus>0?" and $"+bonus+" top contributor bonus":"")+" for "+q.name+"!");
             paid=true;
         }
         if(!paid)tell(p,"No unclaimed quest rewards available.");
@@ -353,11 +360,11 @@ public final class GuildService {
         if(store.all().stream().anyMatch(g->!g.closed && !day.equals(g.lastFeeDay))){
             boolean anyClosed=false;
             BigInteger fee=GuildMoney.amount(config.dailyFeePrice);
-            for(Guild g:store.all()){
+            for(Guild g:List.copyOf(store.all())){
                 if(g.closed || day.equals(g.lastFeeDay))continue;
                 g.lastFeeDay=day;
                 if(g.funds().compareTo(fee)>=0){g.bank=g.funds().subtract(fee).toString();g.addAudit("Gholdengo collected daily fee $"+fee);}
-                else {g.closed=true;anyClosed=true;g.addAudit("Gholdengo disbanded guild; funds and chest archived for admin recovery");}
+                else {store.disband(g,"Gholdengo disbanded guild for nonpayment; remaining assets archived");anyClosed=true;}
             }
             store.save();
             if(anyClosed)server.getPlayerManager().broadcast(Text.literal("§6Gholdengo has finished collecting the daily guild maintenance fees! All guilds that failed to pay have now been disbanded."),false);

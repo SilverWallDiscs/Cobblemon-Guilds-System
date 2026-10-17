@@ -38,6 +38,8 @@ public final class GuildBuffs {
     );
     private static final long MAX_DURATION_MILLIS = 30L * 24L * 60L * 60L * 1000L;
     public static Offer byId(String id){return OFFERS.stream().filter(o->o.id().equalsIgnoreCase(id)).findFirst().orElse(null);}
+    public static boolean enabled(GuildConfig config,Offer offer){return config.buffPurchasesEnabled && !config.disabledBuffs.contains(offer.id());}
+    public static String price(GuildConfig config,Offer offer){return config.buffPrices.getOrDefault(offer.id(),offer.price());}
     public static String unsupportedReason(String id){return UNSUPPORTED.get(id.toLowerCase(Locale.ROOT));}
     public static boolean active(Guild.Effect effect,long now){return effect!=null && (effect.permanent || effect.expiresAt>now);}
     public static double multiplier(Guild g,Kind kind,long now){
@@ -67,13 +69,14 @@ public final class GuildBuffs {
         Guild g=svc.mine(player);
         if(g==null){GuildService.tell(player,"You are not in a guild.");return false;}
         if(!g.allowed(player.getUuid(),"purchase_buffs")){GuildService.tell(player,"You cannot purchase guild buffs.");return false;}
-        if(!svc.config.buffPurchasesEnabled){GuildService.tell(player,"Guild buff purchases are disabled in config until this build has been tested.");return false;}
+        if(!svc.config.buffPurchasesEnabled){GuildService.tell(player,"Guild buff purchases are disabled by administrators.");return false;}
         Offer offer=byId(id);
         if(offer==null){
             String reason=unsupportedReason(id);
             GuildService.tell(player,reason==null?"Unknown buff. Use /guild buffs to see available boosts.":"Not for sale: "+reason);
             return false;
         }
+        if(!enabled(svc.config,offer)){GuildService.tell(player,"This buff is not available in the Guild Buff Shop.");return false;}
         long now=System.currentTimeMillis();
         Guild.Effect old=g.effects.get(offer.id());
         if(offer.minutes()==0 && active(old,now)){
@@ -84,7 +87,7 @@ public final class GuildBuffs {
         if(addition>0 && remaining+addition>MAX_DURATION_MILLIS){
             GuildService.tell(player,"Maximum duration is 30 days per buff tier.");return false;
         }
-        BigInteger cost=new BigInteger(offer.price());
+        BigInteger cost=new BigInteger(price(svc.config,offer));
         BigInteger before=g.funds();
         if(before.compareTo(cost)<0){GuildService.tell(player,"Guild bank needs $"+cost+" CobbleDollars.");return false;}
         Guild.Effect next=new Guild.Effect(offer.id(),addition==0?0:now+remaining+addition,addition==0);
@@ -106,7 +109,7 @@ public final class GuildBuffs {
         Guild g=svc.mine(player);
         if(g==null){GuildService.tell(player,"You are not in a guild.");return;}
         GuildService.tell(player,"Guild Buff Shop (paid from the guild bank):");
-        for(Offer o:OFFERS)GuildService.tell(player,o.label()+" - $"+o.price()+" - "+(o.minutes()==0?"Permanent":o.minutes()+" minutes")+" ["+o.id()+"]");
+        for(Offer o:OFFERS)if(enabled(svc.config,o))GuildService.tell(player,o.label()+" - $"+price(svc.config,o)+" - "+(o.minutes()==0?"Permanent":o.minutes()+" minutes")+" ["+o.id()+"]");
         GuildService.tell(player,svc.config.buffPurchasesEnabled?"Buy: /guild buff buy <id>":"Purchases currently disabled by server configuration.");
     }
     public static void effects(GuildService svc,ServerPlayerEntity player){

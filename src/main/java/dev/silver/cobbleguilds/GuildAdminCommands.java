@@ -20,7 +20,7 @@ public final class GuildAdminCommands {
     private static void tell(ServerPlayerEntity player,String message){GuildService.tell(player,message);}
     private static Guild find(ServerPlayerEntity actor,String name){
         Guild guild=svc().store.named(name);
-        if(guild==null)tell(actor,"Active guild not found (use /guild admin restore <UUID> for archived guilds).");
+        if(guild==null)tell(actor,"Active guild not found. Disbanded guilds cannot be restored; use the Admin Archive menu.");
         return guild;
     }
     private static boolean can(ServerPlayerEntity actor,String permission){

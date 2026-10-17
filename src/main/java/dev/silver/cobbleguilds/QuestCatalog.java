@@ -5,7 +5,8 @@ import java.util.*;
 /** Deterministic server-side quest rotation. Objective types not backed by tested events are not offered. */
 public final class QuestCatalog {
     private QuestCatalog() {}
-    public record Definition(String name, String kind, String qualifier, int target, int minimum, int candies) {
+    public record Definition(String name, String kind, String qualifier, int target, int minimum, int candies, String rewardItemId, String rewardItemData, int rewardCount) {
+        public Definition(String name,String kind,String qualifier,int target,int minimum,int candies){this(name,kind,qualifier,target,minimum,candies,"cobblemon:rare_candy","",Math.max(1,candies));}
         public Definition(String name,String kind,int target,int minimum,int candies){this(name,kind,"",target,minimum,candies);}
     }
     public static final List<Definition> DAILY = List.of(
@@ -36,18 +37,25 @@ public final class QuestCatalog {
         }
     }
     public static void refresh(Guild g, String day, String week, long dailyEnd, long weeklyEnd,boolean bingoEnabled){
+        refresh(g,day,week,dailyEnd,weeklyEnd,bingoEnabled,"cobblemon:rare_candy","",3,2,1);
+    }
+    public static void refresh(Guild g, String day, String week, long dailyEnd, long weeklyEnd,boolean bingoEnabled,
+                               String bingoRewardItemId,String bingoRewardItemData,int bingoRewardCount,int dailyCount,int weeklyCount){
         // One stable random-looking rotation per guild/day; does not change on reboot.
         List<Definition> daily=new ArrayList<>(configuredDaily);
         Collections.shuffle(daily,new Random(Objects.hash(g.id,day)));
-        for(int i=0;i<Math.min(2,daily.size());i++){
+        for(int i=0;i<Math.min(dailyCount,daily.size());i++){
             Definition d=daily.get(i);
             String id="day-"+day+"-"+i;
             g.quests.computeIfAbsent(id,key->create(id,d,dailyEnd,g.funds().toString()));
         }
         List<Definition> weekly=new ArrayList<>(configuredWeekly);
         Collections.shuffle(weekly,new Random(Objects.hash(g.id,week)));
-        String id="week-"+week;
-        g.quests.computeIfAbsent(id,key->create(id,weekly.get(0),weeklyEnd,g.funds().toString()));
+        for(int i=0;i<Math.min(weeklyCount,weekly.size());i++){
+            String id="week-"+week+"-"+i;
+            Definition def=weekly.get(i);
+            g.quests.computeIfAbsent(id,key->create(id,def,weeklyEnd,g.funds().toString()));
+        }
         if(!bingoEnabled)return;
         // Nine weekly cooperative Bingo tiles. Their rewards use the existing claim ledger.
         List<Definition> pool=new ArrayList<>();pool.addAll(configuredDaily);pool.addAll(configuredWeekly);
@@ -56,12 +64,15 @@ public final class QuestCatalog {
             Definition d=pool.get(i % pool.size());String bingoId="bingo-"+week+"-"+i;
             g.quests.computeIfAbsent(bingoId,key->{
                 Guild.Quest q=create(bingoId,d,weeklyEnd,g.funds().toString());
-                q.name="Bingo: "+d.name();q.candies=Math.min(3,d.candies());return q;
+                q.name="Bingo: "+d.name();q.candies=Math.min(3,d.candies());
+                q.rewardItemId=bingoRewardItemId;q.rewardItemData=bingoRewardItemData;
+                q.rewardCount=bingoRewardCount;return q;
             });
         }
     }
     private static Guild.Quest create(String id,Definition d,long end,String bankBaseline){
         Guild.Quest q=new Guild.Quest(id,d.name(),d.target(),d.minimum(),d.candies(),end);
-        q.kind=d.kind();q.qualifier=d.qualifier();q.highestBankFunds=bankBaseline;return q;
+        q.kind=d.kind();q.qualifier=d.qualifier();q.highestBankFunds=bankBaseline;
+        q.rewardItemId=d.rewardItemId();q.rewardItemData=d.rewardItemData();q.rewardCount=d.rewardCount();return q;
     }
 }

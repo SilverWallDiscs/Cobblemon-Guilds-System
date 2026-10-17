@@ -113,6 +113,9 @@ public final class Guild {
         public int target;
         public int minimum;
         public int candies;
+        public String rewardItemId="cobblemon:rare_candy";
+        public String rewardItemData="";
+        public int rewardCount=0;
         public String kind = "capture"; // capture | deposit (more event types added when their Cobblemon hooks are verified)
         public String qualifier = "";
         public String highestBankFunds = "0";

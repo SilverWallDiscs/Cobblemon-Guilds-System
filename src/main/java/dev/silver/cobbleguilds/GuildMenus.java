@@ -15,7 +15,8 @@ public final class GuildMenus {
     private static GuildChest chests;
     public static void init(GuildChest store){chests=store;}
     public static void openChest(ServerPlayerEntity player,GuildService svc,Guild g,boolean admin){
-        if(g.closed || !svc.authorized(player,g,"chest",admin)){
+        if((g.closed && !(admin && svc.isAdmin(player,"cobbleguilds.admin.manage") && svc.store.archived(g.id)==g)) ||
+            (!g.closed && !svc.authorized(player,g,"chest",admin))){
             GuildService.tell(player,"You don't have permission to open the guild chest.");return;
         }
         Inventory inventory=chests.inventory(g);
@@ -35,7 +36,9 @@ public final class GuildMenus {
             super(type,syncId,player,inventory,rows);this.svc=svc;this.guild=guild;this.admin=admin;
         }
         @Override public boolean canUse(PlayerEntity p){
-            return p instanceof ServerPlayerEntity player && !guild.closed && svc.authorized(player,guild,"chest",admin);
+            return p instanceof ServerPlayerEntity player && (guild.closed
+                ? admin && svc.store.archived(guild.id)==guild && svc.isAdmin(player,"cobbleguilds.admin.manage")
+                : svc.store.byId(guild.id)==guild && svc.authorized(player,guild,"chest",admin));
         }
         @Override public void onSlotClick(int slot,int button,SlotActionType action,PlayerEntity p){
             if(!canUse(p))return;

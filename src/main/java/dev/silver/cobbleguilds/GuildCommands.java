@@ -31,7 +31,11 @@ public final class GuildCommands {
         root.then(literal("admin").executes(ctx->{
             ServerPlayerEntity p=player(ctx);
             if(!service().isAdmin(p,"cobbleguilds.admin.gui")){GuildService.tell(p,"Access denied.");return 0;}
-            GuildGui.browse(p,service(),0,true);return 1;
+            GuildGui.adminHub(p,service());return 1;
+        }));
+        root.then(literal("config").executes(ctx->{
+            ServerPlayerEntity p=player(ctx);
+            GuildConfigMenu.main(p,service());return 1;
         }));
         // Staff may retain emergency commands; ordinary players do not see dozens of subcommands.
         GuildAdminCommands.attach(root);

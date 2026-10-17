@@ -33,7 +33,7 @@ public final class GuildGui {
         if(lines.length>0)stack.set(DataComponentTypes.LORE,new LoreComponent(Arrays.stream(lines).<Text>map(Text::literal).toList()));
         return stack;
     }
-    private static ItemStack head(Guild guild,String id,GuildService svc){
+    static ItemStack head(Guild guild,String id,GuildService svc){
         UUID uuid=UUID.fromString(id);
         ServerPlayerEntity online=svc.server.getPlayerManager().getPlayer(uuid);
         String name=online==null?guild.memberNames.getOrDefault(id,"Unknown Player"):online.getGameProfile().getName();
@@ -45,6 +45,82 @@ public final class GuildGui {
     }
     private static Item material(String id){try{Item i=Registries.ITEM.get(Identifier.of(id));return i==Items.AIR?Items.NAME_TAG:i;}catch(Exception e){return Items.NAME_TAG;}}
     public static ItemStack guildIcon(Guild g){return item(material(g.icon),g.color+g.name,"§7["+g.tag+"]","§7Leader: "+g.memberNames.getOrDefault(g.leader,"Unknown"),"§7Members: "+g.members.size(),"§7"+g.description,"§eClick for details");}
+    /** Distinct active and permanently-disbanded collections; no restoration action exists. */
+    public static void adminHub(ServerPlayerEntity p,GuildService svc){
+        if(!svc.isAdmin(p,"cobbleguilds.admin.gui")){GuildService.tell(p,"Access denied.");return;}
+        Menu m=new Menu(3);
+        m.slot(11,item(Items.EMERALD_BLOCK,"§aActive Guilds","§7Guilds: "+svc.store.all().size(),"§7Browse and manage active guilds"),(pl,c)->browse(pl,svc,0,true));
+        m.slot(13,item(Items.BARRIER,"§cDisbanded Guilds","§7Archived: "+svc.store.disbanded().size(),"§7View old members, chest and bank","§7Permanent deletion controls"),(pl,c)->archiveBrowse(pl,svc,0));
+        m.slot(15,item(Items.COMPARATOR,"§eGuild Configuration","§7Quests, Bingo, rewards, buffs, prices","§7Reload config without restarting"),(pl,c)->GuildConfigMenu.main(pl,svc));
+        m.slot(22,item(Items.ARROW,"§7Back"),(pl,c)->start(pl,svc));m.open(p,"Guilds · Admin Hub");
+    }
+    public static void archiveBrowse(ServerPlayerEntity p,GuildService svc,int page){
+        if(!svc.isAdmin(p,"cobbleguilds.admin.gui"))return;
+        List<Guild> list=svc.store.disbanded().stream().sorted(Comparator.comparing(g->g.name.toLowerCase(Locale.ROOT))).toList();
+        Menu m=new Menu(6);int from=Math.max(0,page)*45;
+        for(int i=from;i<Math.min(list.size(),from+45);i++){
+            Guild archived=list.get(i);m.slot(i-from,item(material(archived.icon),"§c"+archived.name,
+                "§7Tag: "+archived.tag,"§7Former leader: "+archived.memberNames.getOrDefault(archived.leader,"Unknown"),
+                "§7Former members: "+archived.members.size(),"§7Saved bank: $"+archived.bank,"§cPermanently disbanded"),(pl,c)->archiveDetail(pl,svc,archived,page));
+        }
+        if(page>0)m.slot(45,item(Items.ARROW,"Previous Page"),(pl,c)->archiveBrowse(pl,svc,page-1));
+        if(from+45<list.size())m.slot(53,item(Items.ARROW,"Next Page"),(pl,c)->archiveBrowse(pl,svc,page+1));
+        if(!list.isEmpty()&&svc.isAdmin(p,"cobbleguilds.admin.manage"))m.slot(48,item(Items.TNT,"§4DELETE ALL DISBANDED GUILDS",
+            "§cPermanently delete archived guilds, history and chests","§cThis CANNOT be undone"),(pl,c)->confirm(pl,"PERMANENTLY delete all "+svc.store.disbanded().size()+" archived guilds?",()->{
+                if(!svc.isAdmin(pl,"cobbleguilds.admin.manage"))return;
+                confirm(pl,"FINAL WARNING: DELETE EVERY ARCHIVE?",()->{
+                    if(!svc.isAdmin(pl,"cobbleguilds.admin.manage"))return;
+                    int count=svc.store.deleteAllDisbanded();GuildService.tell(pl,"Permanently deleted "+count+" archived guilds.");archiveBrowse(pl,svc,0);
+                },()->archiveBrowse(pl,svc,page));
+            },()->archiveBrowse(pl,svc,page)));
+        m.slot(49,item(Items.ARROW,"§7Back"),(pl,c)->adminHub(pl,svc));m.open(p,"Disbanded Guilds");
+    }
+    private static void archiveDetail(ServerPlayerEntity p,GuildService svc,Guild g,int page){
+        if(!svc.isAdmin(p,"cobbleguilds.admin.gui")||svc.store.archived(g.id)!=g){archiveBrowse(p,svc,page);return;}
+        Menu m=new Menu(6);
+        m.slot(4,item(material(g.icon),"§c"+g.name,"§7Former leader: "+g.memberNames.getOrDefault(g.leader,"Unknown"),
+            "§7Tag: "+g.tag,"§7Members at disband: "+g.members.size(),"§7Guild UUID: "+g.id,"§cDisbanded - cannot be restored"),(pl,c)->{});
+        m.slot(11,item(Items.CHEST,"§eArchived Chest","§7"+(g.chestRows*9)+" slots","§7Staff can inspect and retrieve items"),(pl,c)->GuildMenus.openChest(pl,svc,g,true));
+        m.slot(13,item(Items.GOLD_BLOCK,"§6Saved Balance: $"+g.bank,"§7Staff bank access"),(pl,c)->archiveBank(pl,svc,g,page));
+        m.slot(15,item(Items.PLAYER_HEAD,"§bFormer Members","§7"+g.members.size()+" player records"),(pl,c)->archiveMembers(pl,svc,g,page,0));
+        m.slot(22,item(Items.WRITABLE_BOOK,"§eArchive Activity Logs","§7Last events of the guild"),(pl,c)->archiveLogs(pl,svc,g,page));
+        if(svc.isAdmin(p,"cobbleguilds.admin.manage"))m.slot(40,item(Items.TNT,"§4Permanently Delete Archive","§cDeletes guild history, bank and chest","§cNo recovery possible"),(pl,c)->confirm(pl,"Delete archive "+g.name+"?",()->{
+            if(!svc.isAdmin(pl,"cobbleguilds.admin.manage"))return;
+            confirm(pl,"FINAL WARNING: DELETE "+g.tag+"?",()->{if(!svc.isAdmin(pl,"cobbleguilds.admin.manage"))return;
+                svc.store.deleteDisbanded(g.id);GuildService.tell(pl,"Deleted disbanded guild "+g.name+" permanently.");archiveBrowse(pl,svc,page);
+            },()->archiveDetail(pl,svc,g,page));
+        },()->archiveDetail(pl,svc,g,page)));
+        m.slot(49,item(Items.ARROW,"§7Back"),(pl,c)->archiveBrowse(pl,svc,page));m.open(p,"Archived · "+g.name);
+    }
+    private static void archiveBank(ServerPlayerEntity p,GuildService svc,Guild g,int page){
+        if(!svc.isAdmin(p,"cobbleguilds.admin.bank")||svc.store.archived(g.id)!=g){GuildService.tell(p,"Archived bank access denied.");return;}
+        Menu m=new Menu(3);
+        m.slot(11,item(Items.GOLD_BLOCK,"§6Archived Balance: $"+g.bank,"§7Funds remain in archive until recovered or deleted"),(pl,c)->{});
+        m.slot(15,item(Items.GOLD_INGOT,"§aRecover Funds","§7Enter an amount to transfer to your CobbleDollars","§7Guild remains disbanded"),(pl,c)->ask(pl,"an amount to withdraw from the archived bank",(a,value)->{
+            if(!svc.isAdmin(a,"cobbleguilds.admin.bank")||svc.store.archived(g.id)!=g)return;
+            try{svc.bankWithdraw(a,GuildMoney.amount(value),true,g);}catch(Exception ex){GuildService.tell(a,"Invalid or unavailable amount.");}
+            archiveBank(a,svc,g,page);
+        }));
+        m.slot(22,item(Items.ARROW,"§7Back"),(pl,c)->archiveDetail(pl,svc,g,page));m.open(p,"Archived Bank · "+g.tag);
+    }
+    private static void archiveMembers(ServerPlayerEntity p,GuildService svc,Guild g,int backPage,int page){
+        if(!svc.isAdmin(p,"cobbleguilds.admin.gui")||svc.store.archived(g.id)!=g)return;
+        List<String> ids=new ArrayList<>(g.members.keySet());Menu m=new Menu(6);int from=Math.max(0,page)*45;
+        for(int i=from;i<Math.min(ids.size(),from+45);i++){
+            String id=ids.get(i);m.slot(i-from,head(g,id,svc),(pl,c)->{});
+        }
+        if(page>0)m.slot(45,item(Items.ARROW,"Previous"),(pl,c)->archiveMembers(pl,svc,g,backPage,page-1));
+        if(from+45<ids.size())m.slot(53,item(Items.ARROW,"Next"),(pl,c)->archiveMembers(pl,svc,g,backPage,page+1));
+        m.slot(49,item(Items.ARROW,"§7Back"),(pl,c)->archiveDetail(pl,svc,g,backPage));m.open(p,"Former Members · "+g.tag);
+    }
+    private static void archiveLogs(ServerPlayerEntity p,GuildService svc,Guild g,int page){
+        if(!svc.isAdmin(p,"cobbleguilds.admin.gui")||svc.store.archived(g.id)!=g)return;
+        Menu m=new Menu(6);List<String> entries=g.audit==null?List.of():g.audit;
+        for(int i=0;i<Math.min(45,entries.size());i++){
+            String event=entries.get(entries.size()-i-1);m.slot(i,item(Items.PAPER,"§7Event "+(i+1),"§7"+event),(pl,c)->{});
+        }
+        m.slot(49,item(Items.ARROW,"§7Back"),(pl,c)->archiveDetail(pl,svc,g,page));m.open(p,"Archive Logs · "+g.tag);
+    }
     public static void start(ServerPlayerEntity player,GuildService svc){
         Guild own=svc.mine(player);if(own!=null){guild(player,svc,own,false);return;}
         Menu menu=new Menu(1);
@@ -74,12 +150,12 @@ public final class GuildGui {
             if(value.length()>220){GuildService.tell(pl,"Description is too long.");create(pl,svc);return;}
             d.description=value;create(pl,svc);
         }));
-        m.slot(31,item(Items.EMERALD_BLOCK,"§aCreate Guild","§7Costs $"+svc.config.guildCreatePrice,"§7No charge if validation fails"),(p,c)->{
+        m.slot(29,item(Items.EMERALD_BLOCK,"§aCreate Guild","§7Costs $"+svc.config.guildCreatePrice,"§7No charge if validation fails"),(p,c)->{
             if(svc.create(p,d.name,d.tag,d.color,d.publicGuild,d.description)){
                 Guild g=svc.mine(p);g.icon=d.icon;svc.store.save();drafts.remove(p.getUuid());guild(p,svc,g,false);
             }else create(p,svc);
         });
-        m.slot(35,item(Items.ARROW,"§7Back"),(p,c)->start(p,svc));m.open(player,"Create Guild");
+        m.slot(31,item(Items.ARROW,"§7Back"),(p,c)->start(p,svc));m.open(player,"Create Guild");
     }
     private static void colors(ServerPlayerEntity player,GuildService svc,Guild guild,boolean admin){
         String[] codes={"0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"};
@@ -103,14 +179,14 @@ public final class GuildGui {
     }
     public static void browse(ServerPlayerEntity player,GuildService svc,int page,boolean admin){
         if(admin&&!svc.isAdmin(player,"cobbleguilds.admin.gui")){GuildService.tell(player,"Access denied.");return;}
-        List<Guild> list=svc.store.all().stream().filter(g->admin||!g.closed).sorted(Comparator.comparing(g->g.name.toLowerCase(Locale.ROOT))).toList();
+        List<Guild> list=svc.store.all().stream().filter(g->!g.closed).sorted(Comparator.comparing(g->g.name.toLowerCase(Locale.ROOT))).toList();
         Menu m=new Menu(6);int from=Math.max(0,page)*45;
         for(int i=from;i<Math.min(list.size(),from+45);i++){
             Guild g=list.get(i);m.slot(i-from,guildIcon(g),(p,c)->{if(admin)guild(p,svc,g,true);else preview(p,svc,g);});
         }
         if(page>0)m.slot(45,item(Items.ARROW,"Previous Page"),(p,c)->browse(p,svc,page-1,admin));
         if(from+45<list.size())m.slot(53,item(Items.ARROW,"Next Page"),(p,c)->browse(p,svc,page+1,admin));
-        m.slot(49,item(Items.BARRIER,"§7Back"),(p,c)->start(p,svc));
+        m.slot(49,item(Items.BARRIER,"§7Back"),(p,c)->{if(admin)adminHub(p,svc);else start(p,svc);});
         m.open(player,admin?"Admin · All Guilds":"Browse Guilds");
     }
     private static void preview(ServerPlayerEntity p,GuildService svc,Guild g){
@@ -122,7 +198,7 @@ public final class GuildGui {
         m.slot(22,item(Items.ARROW,"Back"),(pl,c)->browse(pl,svc,0,false));m.open(p,"Guild · "+g.name);
     }
     public static void guild(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
-        if(g==null){start(p,svc);return;}
+        if(g==null || g.closed){start(p,svc);return;}
         if(admin){if(!svc.isAdmin(p,"cobbleguilds.admin.gui")){GuildService.tell(p,"Access denied.");return;}}
         else if(!g.contains(p.getUuid())){GuildService.tell(p,"Not a guild member.");return;}
         Menu m=new Menu(6);
@@ -161,12 +237,8 @@ public final class GuildGui {
         }
         if(admin){
             m.slot(48,item(Items.BARRIER,"§cAdmin View","§7Guild: "+g.name,"§7Leader: "+g.memberNames.getOrDefault(g.leader,"Unknown")),(pl,c)->{});
-            if(g.closed)m.slot(50,item(Items.EMERALD,"§aRestore Archived Guild"),(pl,c)->confirm(pl,"Restore "+g.name+"?",()->{
-                if(!svc.isAdmin(pl,"cobbleguilds.admin.manage"))return;
-                g.closed=false;g.lastFeeDay=java.time.LocalDate.now(svc.zone()).toString();g.addAudit("ADMIN restored guild");svc.store.save();guild(pl,svc,g,true);
-            },()->guild(pl,svc,g,true)));
-            m.slot(53,item(Items.ARROW,"§7All Guilds"),(pl,c)->browse(pl,svc,0,true));
-        }else m.slot(53,item(Items.ARROW,"§7Close"),(pl,c)->pl.closeHandledScreen());
+            m.slot(49,item(Items.ARROW,"§7Back"),(pl,c)->adminHub(pl,svc));
+        }else m.slot(49,item(Items.ARROW,"§7Back"),(pl,c)->pl.closeHandledScreen());
         m.open(p,(admin?"ADMIN · ":"")+g.name);
     }
     public static void buffsMenu(ServerPlayerEntity p,GuildService svc){Guild g=svc.mine(p);if(g==null)start(p,svc);else buffs(p,svc,g,false);}
@@ -222,18 +294,19 @@ public final class GuildGui {
     private static void buffs(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
         Menu m=new Menu(6);long now=System.currentTimeMillis();int i=0;
         for(GuildBuffs.Offer offer:GuildBuffs.OFFERS){
+            if(!GuildBuffs.enabled(svc.config,offer))continue;
             Guild.Effect fx=g.effects.get(offer.id());boolean active=GuildBuffs.active(fx,now);
-            m.slot(i++,item(active?Items.ENCHANTED_BOOK:Items.BOOK,"§d"+offer.label(),"§7Price: $"+offer.price(),"§7Duration: "+(offer.minutes()==0?"Permanent":offer.minutes()+" minutes"),
+            m.slot(i++,item(active?Items.ENCHANTED_BOOK:Items.BOOK,"§d"+offer.label(),"§7Price: $"+GuildBuffs.price(svc.config,offer),"§7Duration: "+(offer.minutes()==0?"Permanent":offer.minutes()+" minutes"),
                     "§7Status: "+(active?GuildBuffs.durationText(fx,now):"Not active"),"§eClick to purchase for guild"),(pl,c)->{
                 if(admin){GuildService.tell(pl,"Admin cannot purchase buffs on another guild's behalf.");return;}
                 if(!can(pl,svc,g,"purchase_buffs",false))return;
-                confirm(pl,"Buy "+offer.label()+" for $"+offer.price()+"?",()->{GuildBuffs.buy(svc,pl,offer.id());buffs(pl,svc,g,false);},()->buffs(pl,svc,g,false));
+                confirm(pl,"Buy "+offer.label()+" for $"+GuildBuffs.price(svc.config,offer)+"?",()->{GuildBuffs.buy(svc,pl,offer.id());buffs(pl,svc,g,false);},()->buffs(pl,svc,g,false));
             });
         }
         int slot=18;
         for(var unsupported:GuildBuffs.UNSUPPORTED.entrySet())m.slot(slot++,item(Items.BARRIER,"§8"+unsupported.getKey(),"§7Unavailable: "+unsupported.getValue()),(pl,c)->{});
-        m.slot(49,item(Items.CLOCK,"§aActive Effects","§7Click to view timers"),(pl,c)->effects(pl,svc,g,admin));
-        m.slot(53,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Guild Buff Shop");
+        m.slot(47,item(Items.CLOCK,"§aActive Effects","§7Click to view timers"),(pl,c)->effects(pl,svc,g,admin));
+        m.slot(49,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Guild Buff Shop");
     }
     private static void effects(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
         Menu m=new Menu(6);int i=0;long now=System.currentTimeMillis();
@@ -444,7 +517,7 @@ public final class GuildGui {
         }
         m.slot(4,item(Items.MAP,"§dWeekly Guild Bingo","§7Complete lines of three","§7Bonus XP per line: "+Math.min(150,svc.config.bingoLineExperience)),(pl,c)->{});
         if(!admin)m.slot(49,item(Items.CHEST,"§aClaim Rewards"),(pl,c)->{svc.claim(pl);bingo(pl,svc,g,admin);});
-        m.slot(53,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Guild Bingo");
+        m.slot(49,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Guild Bingo");
     }
     private static String questGoal(Guild.Quest q){return switch(q.kind){
         case "deposit" -> "Deposit "+q.target+" new CobbleDollars to bank";
@@ -457,7 +530,7 @@ public final class GuildGui {
     };}
     private static ItemStack questItem(ServerPlayerEntity p,Guild.Quest q){
         return item(q.completed?Items.EMERALD:Items.PAPER,"§d"+q.name,"§7Objective: "+questGoal(q),"§7Guild progress: "+q.progress()+"/"+q.target,
-                "§7Your contribution: "+q.amount(p.getUuid())+"/"+q.minimum,"§7Reward: "+q.candies+" Rare Candies",
+                "§7Your contribution: "+q.amount(p.getUuid())+"/"+q.minimum,"§7Reward: "+(q.rewardCount>0?q.rewardCount:Math.max(1,q.candies))+"x "+q.rewardItemId,
                 "§7Status: "+(q.completed?"Completed":q.expiresAt<System.currentTimeMillis()?"Expired":"Active"),"§eClick for details");
     }
     private static void quests(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin,int page){
@@ -544,8 +617,8 @@ public final class GuildGui {
                 g.incomingAlliances.remove(other.id);g.allies.add(other.id);other.allies.add(g.id);svc.store.save();alliances(pl,svc,g,admin);
             });
         }
-        if(canSilent(p,svc,g,"manage_settings",admin))m.slot(49,item(Items.EMERALD_BLOCK,"§aRequest an Alliance","§7Choose a guild"),(pl,c)->allianceBrowse(pl,svc,g,admin,0));
-        m.slot(53,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Guild Alliances");
+        if(canSilent(p,svc,g,"manage_settings",admin))m.slot(47,item(Items.EMERALD_BLOCK,"§aRequest an Alliance","§7Choose a guild"),(pl,c)->allianceBrowse(pl,svc,g,admin,0));
+        m.slot(49,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Guild Alliances");
     }
     private static void allianceBrowse(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin,int page){
         if(!can(p,svc,g,"manage_settings",admin)||!g.isLeader(p.getUuid())&&!admin)return;
@@ -562,13 +635,13 @@ public final class GuildGui {
         if(from+45<possible.size())m.slot(53,item(Items.ARROW,"Next"),(pl,c)->allianceBrowse(pl,svc,g,admin,page+1));
         m.slot(49,item(Items.ARROW,"Back"),(pl,c)->alliances(pl,svc,g,admin));m.open(p,"Request Guild Alliance");
     }
-    private static void confirm(ServerPlayerEntity p,String question,Runnable yes,Runnable no){
+    static void confirm(ServerPlayerEntity p,String question,Runnable yes,Runnable no){
         Menu m=new Menu(3);m.slot(4,item(Items.PAPER,"§e"+question),(pl,c)->{});
         m.slot(11,item(Items.EMERALD,"§aConfirm"),(pl,c)->yes.run());
-        m.slot(15,item(Items.BARRIER,"§cCancel"),(pl,c)->no.run());m.open(p,"Confirm Action");
+        m.slot(22,item(Items.ARROW,"§7Back / Cancel"),(pl,c)->no.run());m.open(p,"Confirm Action");
     }
     @FunctionalInterface public interface Click {void run(ServerPlayerEntity player,ItemStack cursor);}
-    private static final class Menu {
+    static final class Menu {
         final int rows;final SimpleInventory inventory;final Map<Integer,Click> actions=new HashMap<>();
         Menu(int rows){this.rows=rows;inventory=new SimpleInventory(rows*9);}
         void slot(int slot,ItemStack stack,Click action){inventory.setStack(slot,stack);actions.put(slot,action);}
