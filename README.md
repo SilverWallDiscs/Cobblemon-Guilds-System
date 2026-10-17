@@ -1,10 +1,10 @@
 # Cobblemon Guilds System
 
-**CobbleGuilds — alpha source release (0.2.0-alpha)**
+**CobbleGuilds — alpha source release (0.2.1-alpha)**
 
 A **dedicated-server-only** Fabric mod for **Minecraft 1.21.1**, written for the Cobblemon ecosystem and integrated with **CobbleDollars 2.x**. The server mod ID is `cobbleguilds`.
 
-> ⚠️ **Compiled alpha, not tested in Minecraft.** GitHub Actions run [39073145319](https://github.com/SilverWallDiscs/Cobblemon-Guilds-System/actions/runs/39073145319) passed Java 21 Gradle compilation and isolated tests. A JAR exists as a workflow artifact, but dedicated-server gameplay and crash-recovery tests are still required.
+> ⚠️ **Uncompiled / unverified prototype.** Dependencies were unavailable in the authoring environment, so there is **no tested JAR**. Do not install on a production server or trust its accounting/persistence without compiling it, testing it and backing up your world.
 
 ## Strict server-side design
 
@@ -32,7 +32,7 @@ A **dedicated-server-only** Fabric mod for **Minecraft 1.21.1**, written for the
 
 ## Not implemented — do **not** advertise as working
 
-- **Experimental real Cobblemon buffs:** 7 purchasable tiers spanning Shiny, catch rate, battle XP, battle EVs and friendship are connected to Cobblemon 1.7 events in source (not yet compiled or tested in-game). Purchases default **disabled** and must be manually enabled in config after testing. Rare spawn, hidden ability and Alpha buffs remain unsupported / not purchasable.
+- **Experimental real Cobblemon buffs:** 7 purchasable tiers spanning Shiny, catch rate, battle XP, battle EVs and friendship are connected to Cobblemon 1.7 events in source (not yet compiled or tested in-game). Purchases default **disabled** and must be manually enabled in config after testing. Hidden ability and Alpha buffs remain unsupported / not purchasable.
 - Complete guild quests list (types, evolutions, PvP, Alpha, eggs, configurable catalogs, payouts from configurable item tables), real Guild Bingo, alliances, bounty boards, streaks and leaderboards beyond XP.
 - In-chat name-tag decoration, client-side anvil/book text input, custom book confirmation, and full member profile head rendering.
 - Full Guild Admin edit-as-leader actions (there is an inspection/menu foundation, plus moderation) and full Guild recovery/escrow payout interface.
@@ -104,25 +104,26 @@ No third-party Cobblemon or CobbleDollars source is copied into the mod. Those A
 - `/guild settings color <&code>` and `/guild settings icon` (item in main hand is not consumed).
 - `/guild admin invite <guild> <player>`, `/guild admin bank <guild> <signed amount>`, `/guild admin bans <guild>`, `/guild admin restore <guildUUID>`.
 - New daily/weekly capture/deposit quest rotation, with anti-recycle bank quest contribution limited to net-new treasury highs, plus a basic streak counter.
-- CI workflow runs a Java 21 Fabric build on GitHub Actions; [run 39073145319](https://github.com/SilverWallDiscs/Cobblemon-Guilds-System/actions/runs/39073145319) **passed**; gameplay is still unverified.
+- CI workflow requests a Java 21 Fabric build on GitHub Actions; **a passing workflow is required before distributing a JAR**.
 
 ### Remaining high-priority limitations
 
-- Real Shiny, catch, battle XP, battle EV and friendship event handlers are implemented in `GuildBuffs`, and **have compiled in CI but have not been tested in-game**. Purchases remain off by default (`buffPurchasesEnabled: false`) to protect economies until verification. Rare spawn / hidden ability / Alpha are not sold.
+- Real Shiny, catch, battle XP, battle EV and friendship event handlers are implemented in `GuildBuffs`, but **have not yet compiled or been tested in-game**. Purchases remain off by default (`buffPurchasesEnabled: false`) to protect economies until verification. Hidden ability / Alpha are not sold.
 - Complex capture filters (shiny, species, types, alpha), evolution/EXP/PvP and fishing quests are not counted yet. Only actual capture events and net-new bank deposits are counted.
 - GUI book editing, complete rank-permission GUI, live admin screens, offline-user moderation, escrow withdrawal after disbandment, PvP anti-farming and guild bingo/alliances remain pending.
 - CobbleDollars fund transfers and item delivery require integration/crash-recovery tests before live use. This is not ready for a production economy.
 - Local environment had no Gradle binary or Gradle dependency downloads; only pure Java domain tests were run here.
 
 
-## v0.2.0-alpha — experimental guild buff hooks
+## v0.2.1-alpha — experimental guild buff hooks
 
-The following server-only Cobblemon 1.7 event hooks are included in source. **Compiles in GitHub Actions, not tested on a real Fabric server.** Default configuration disables purchases and therefore avoids charging players for unverified features.
+The following server-only Cobblemon 1.7 event hooks are included in source. **Uncompiled, not tested on a real Fabric server.** Default configuration disables purchases and therefore avoids charging players for unverified features.
 
 | Buff ID | Intended behavior | Duration | Guild bank price |
 | --- | --- | --- | --- |
 | `shiny_x2` | Extra conditional shiny roll for vanilla BestSpawner wild Pokémon near a guild member (48 blocks) | 1 h | 1,000,000 |
 | `shiny_x3` | Same as above, higher tier overrides lower | 1 h | 3,000,000 |
+| `rare_spawn_x2` | Reweights BestSpawner Rare/Ultra-Rare buckets by x2 in player-caused attempts | 1 h | 1,500,000 |
 | `catch_x15` | Changes Cobblemon catch-rate event for thrower; rate capped to 255 | Permanent | 500,000 |
 | `catch_x2` | Overrides lower catch-rate tier while active | 1 h | 3,000,000 |
 | `exp_x2` | Doubles battle-source experience before award, excludes command and candy XP | 1 h | 750,000 |
