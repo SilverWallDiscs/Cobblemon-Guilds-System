@@ -17,6 +17,8 @@ public final class GuildConfig {
     public int bingoLineExperience = 150;
     public boolean chatSpyEnabled = true;
     public boolean noHud = true;
+    /** Opt-in after integration testing; guild treasury is not charged unless enabled. */
+    public boolean buffPurchasesEnabled = false;
     public boolean guildHomesEnabled = true;
     public int guildHomeCooldownSeconds = 120;
     public boolean announcementsEnabled = true;
