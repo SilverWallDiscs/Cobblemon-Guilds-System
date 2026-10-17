@@ -35,3 +35,7 @@ Source-of-truth requirements: `Instrucciones.txt` (included in this package).
 - [x] Staff `/guild admin edit <tag>` controls for guild name, tag, color, description, privacy, icon, chest capacity, fee waiver and non-leader ranks (source only).
 - [x] Member GUI with current online usernames, roles and displayed online CobbleDollars balances.
 - [ ] Validate Gradle build and Minecraft integration, including Cobblemon capture events and signed chat.
+
+- [x] Experimental event hooks for shiny, catch, battle XP, EV and friendship (source-only; default off).
+- [ ] Complete real server launch verification; fix Fabric/Java API mismatches, obtain passing CI JAR.
+- [ ] Rare spawn weight, hidden ability and Alpha-specific effects (not offered for purchase).
