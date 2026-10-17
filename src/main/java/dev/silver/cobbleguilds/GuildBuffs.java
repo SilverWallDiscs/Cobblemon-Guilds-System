@@ -3,6 +3,7 @@ package dev.silver.cobbleguilds;
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.Priority;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
+import com.cobblemon.mod.common.api.spawning.SpawnBucket;
 import com.cobblemon.mod.common.api.pokemon.experience.BattleExperienceSource;
 import com.cobblemon.mod.common.api.pokemon.stats.BattleEvSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -18,10 +19,11 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class GuildBuffs {
     private GuildBuffs() {}
     public record Offer(String id,String label,String price,int minutes,double multiplier,Kind kind) {}
-    public enum Kind { SHINY, CATCH, EXPERIENCE, EV, FRIENDSHIP }
+    public enum Kind { SHINY, RARE, CATCH, EXPERIENCE, EV, FRIENDSHIP }
     public static final List<Offer> OFFERS = List.of(
         new Offer("shiny_x2","Shiny Luck x2","1000000",60,2.0,Kind.SHINY),
         new Offer("shiny_x3","Shiny Luck x3","3000000",60,3.0,Kind.SHINY),
+        new Offer("rare_spawn_x2","Rare Spawn Bucket Boost x2","1500000",60,2.0,Kind.RARE),
         new Offer("catch_x15","Catch Rate x1.5 (Permanent)","500000",0,1.5,Kind.CATCH),
         new Offer("catch_x2","Catch Rate x2","3000000",60,2.0,Kind.CATCH),
         new Offer("exp_x2","Pokémon EXP x2","750000",60,2.0,Kind.EXPERIENCE),
@@ -31,7 +33,6 @@ public final class GuildBuffs {
     // A spawn *frequency* increase, hidden abilities and Alpha require additional
     // spawn table / form-specific integrations. Never charge for these until implemented.
     public static final Map<String,String> UNSUPPORTED=Map.of(
-        "rare_spawn_x2", "A world spawn weighting integration is required",
         "hidden_ability_x2", "Needs species-specific ability selection integration",
         "alpha_spawn_x2", "Alpha is not a standard Cobblemon 1.7 spawn attribute"
     );
@@ -134,6 +135,28 @@ public final class GuildBuffs {
             if(factor>1){
                 float rate=Cobblemon.INSTANCE.getConfig().getShinyRate();
                 if(ThreadLocalRandom.current().nextDouble()<extraShinyChance(rate,factor))pokemon.setShiny(true);
+            }
+            return Unit.INSTANCE;
+        });
+        // Spawn bucket weight adjustment for player-caused Cobblemon BestSpawner attempts.
+        // This does NOT multiply the number of spawns or alter any other mod's spawn pools.
+        CobblemonEvents.SPAWN_BUCKET_CHOSEN.subscribe(Priority.NORMAL,event->{
+            if(!(event.getSpawnCause().getEntity() instanceof ServerPlayerEntity p))return Unit.INSTANCE;
+            double factor=multiplier(svc,p,Kind.RARE);
+            if(factor<=1)return Unit.INSTANCE;
+            double total=0;
+            for(var weighted:event.getBucketWeights().entrySet()){
+                if(weighted.getValue()!=null && weighted.getValue()>0 && Float.isFinite(weighted.getValue()))
+                    total+=weighted.getValue()*((weighted.getKey().getName().equalsIgnoreCase("rare") || weighted.getKey().getName().equalsIgnoreCase("ultra-rare"))?factor:1.0);
+            }
+            if(total<=0)return Unit.INSTANCE;
+            double draw=ThreadLocalRandom.current().nextDouble(total);
+            SpawnBucket last=null;
+            for(var weighted:event.getBucketWeights().entrySet()){
+                if(weighted.getValue()==null || !Float.isFinite(weighted.getValue()) || weighted.getValue()<=0)continue;
+                last=weighted.getKey();
+                draw-=weighted.getValue()*((last.getName().equalsIgnoreCase("rare") || last.getName().equalsIgnoreCase("ultra-rare"))?factor:1.0);
+                if(draw<0){event.setBucket(last);break;}
             }
             return Unit.INSTANCE;
         });
