@@ -37,6 +37,7 @@ public final class CobbleGuilds implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher,registryAccess,environment)->GuildCommands.register(dispatcher));
         ServerLifecycleEvents.SERVER_STARTED.register(server->{
             service=new GuildService(server);
+            GuildBuffs.subscribe(service);
             chests=new GuildChest(server,service.store);
             GuildMenus.init(chests);
             LOG.info("CobbleGuilds loaded {} guilds - server only, no sidebar/HUD",service.store.all().size());
