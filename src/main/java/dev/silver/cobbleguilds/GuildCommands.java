@@ -87,14 +87,13 @@ public final class GuildCommands {
             .executes(ctx->{svc().listQuests(p(ctx));return ok();})
             .then(literal("claim").executes(ctx->{svc().claim(p(ctx));return ok();})));
         root.then(literal("effects").executes(ctx->{
-            ServerPlayerEntity player=p(ctx);Guild g=svc().mine(player);
-            if(g==null){GuildService.tell(player,"You are not in a guild.");return 0;}
-            if(g.effects.isEmpty())GuildService.tell(player,"No active guild buffs. Buff purchases are not enabled in this alpha.");
-            else for(Guild.Effect fx:g.effects.values())GuildService.tell(player,fx.id+": "+(fx.permanent?"Permanent":((fx.expiresAt-System.currentTimeMillis())/60000)+"m remaining"));
-            return ok();
+            GuildBuffs.effects(svc(),p(ctx));return ok();
+        }));
+        root.then(literal("buffs").executes(ctx->{
+            GuildBuffs.list(svc(),p(ctx));return ok();
         }));
         root.then(literal("buff").then(literal("buy").then(argument("id",StringArgumentType.word()).executes(ctx->{
-            GuildService.tell(p(ctx),"Buff purchases are temporarily disabled: no CobbleDollars charged. Cobblemon effect hooks require verification.");return 0;
+            return GuildBuffs.buy(svc(),p(ctx),StringArgumentType.getString(ctx,"id"))?1:0;
         }))));
         root.then(literal("top").then(literal("captures").executes(ctx->{
             ServerPlayerEntity player=p(ctx);
