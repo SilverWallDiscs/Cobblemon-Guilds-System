@@ -48,10 +48,16 @@ public final class CobbleGuilds implements ModInitializer {
         CobblemonEvents.POKEMON_CAPTURED.subscribe(Priority.NORMAL,event->{
             if(service==null || event.getPlayer()==null)return;
             UUID id=event.getPlayer().getUuid();
+            // Snapshot values before scheduling to the main thread; never inspect player storage later.
+            var pokemon=event.getPokemon();
+            String species=pokemon.getSpecies().getName().toLowerCase(java.util.Locale.ROOT);
+            boolean shiny=pokemon.getShiny();
+            String firstType=pokemon.getPrimaryType().getName().toLowerCase(java.util.Locale.ROOT);
+            String secondType=pokemon.getSecondaryType()==null?"":pokemon.getSecondaryType().getName().toLowerCase(java.util.Locale.ROOT);
             service.server.execute(()->{
                 if(service==null)return;
                 var player=service.server.getPlayerManager().getPlayer(id);
-                if(player!=null)service.captured(player);
+                if(player!=null)service.captured(player,species,shiny,firstType,secondType);
             });
         });
     }

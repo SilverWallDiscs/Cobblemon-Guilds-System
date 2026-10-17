@@ -101,15 +101,25 @@ No third-party Cobblemon or CobbleDollars source is copied into the mod. Those A
 
 - `/guild stats`, `/guild announcement [set <message>]`, `/guild sethome`, `/guild home` (configurable cooldown), `/guild upgrade members` (+5 slots for a guild-bank fee).
 - `/guild leader transfer <player>` followed by `/guild leader confirm ImSure` within 60 seconds; the existing leader is assigned the default member rank. This is a **text confirmation**; requested interactive book confirmation is not implemented yet.
-- `/guild settings color <&code>` and `/guild settings icon` (item in main hand is not consumed).
+- `/guild settings color <code>` (use a hex-format code e.g. c, or choose from the GUI) and `/guild settings icon` (item in main hand is not consumed).
 - `/guild admin invite <guild> <player>`, `/guild admin bank <guild> <signed amount>`, `/guild admin bans <guild>`, `/guild admin restore <guildUUID>`.
-- New daily/weekly capture/deposit quest rotation, with anti-recycle bank quest contribution limited to net-new treasury highs, plus a basic streak counter.
+- New daily/weekly capture/deposit/shiny/type/unique-species quest rotation, configurable through `config/cobbleguilds-quests.json`; funding quests credit only net-new treasury highs, plus a basic streak counter.
 - CI workflow requests a Java 21 Fabric build on GitHub Actions; **a passing workflow is required before distributing a JAR**.
 
 ### Remaining high-priority limitations
 
 - Real Cobblemon guild-buff multipliers **are not implemented and cannot be purchased**. They must not charge users until actual server-side hooks have been tested. `/guild effects` remains informational only.
-- Complex capture filters (shiny, species, types, alpha), evolution/EXP/PvP and fishing quests are not counted yet. Only actual capture events and net-new bank deposits are counted.
+- Capture quests now support normal catches, shinies, selected Pokémon types, and distinct species via server events. Alpha, evolution/EXP/PvP and fishing objectives are not connected yet.
 - GUI book editing, complete rank-permission GUI, live admin screens, offline-user moderation, escrow withdrawal after disbandment, PvP anti-farming and guild bingo/alliances remain pending.
 - CobbleDollars fund transfers and item delivery require integration/crash-recovery tests before live use. This is not ready for a production economy.
 - Local environment had no Gradle binary or Gradle dependency downloads; only pure Java domain tests were run here.
+
+### Configurable quest pool
+
+On first server start, `config/cobbleguilds-quests.json` is generated. Quest templates accept a `cadence` of `daily` or `weekly`, an enabled flag, name, objective kind (`capture`, `shiny_capture`, `type_capture`, `unique_capture`, `deposit`), qualifier for type objectives, target, participation minimum and rare-candy amount (0–64). The server selects two daily quests and one weekly quest deterministically per guild and period. Restart after editing quest templates. Other quest kinds are intentionally rejected until supported by verified Cobblemon hooks.
+
+### Server-only and player experience rules
+
+The guild mod does not register client entrypoints and does not send custom client packets. Every menu is a vanilla server-managed chest screen. No persistent scoreboard, action bar, sidebar, boss bar or status overlay is used. Chat is used for command results, quest completion notifications, maintenance reminders and explicitly sent guild chat. Guild effects are viewable through `/guild effects`; real multipliers are deliberately unavailable until verified.
+
+**Security note:** The source includes defensive checks and atomic JSON writes, but CobbleDollars + chest operations are not a guaranteed transactional database. Test on a separate server with a full world backup; do not use it as a real-money or live economy service until crash recovery and concurrency testing is complete.

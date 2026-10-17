@@ -8,14 +8,16 @@ Source-of-truth requirements: `Instrucciones.txt` (included in this package).
 - [x] Vanilla physical chest and row-based upgrades with persistent NBT storage.
 - [x] Guild-chat command and chat spy, permission checks and basic admin list/moderation.
 - [x] Guild permission ranks, with hierarchy restrictions and default rank.
-- [x] Basic guild quest contributions on Pokémon capture + persistent claims.
+- [x] Capture/shiny/type/unique-species + net-new bank-funding quests, deterministic daily/weekly rotation and persistent claims (source only).
 - [ ] Build and dedicated-server integration test.
 - [ ] Full admin modifications, ban reason data, member heads and leader transfer book confirmation.
-- [ ] Colored tag insertion in chat without overwriting other chat formatting plugins.
-- [ ] Full 54-slot menu detail and native sign/anvil/book input, chat fallback.
+- [x] Fabric server-side chat decorator prefixes guild tag to message content (rank plugin compatibility must be tested).
+- [x] Basic settings/color/bank chest GUI and quests menu, built on vanilla inventory slots.
+- [ ] Native book/anvil editing and fully interactive rank/admin screens.
 - [ ] Live Guild Buff effects on Cobblemon's per-player/pokémon hooks. Never activate billing until hooks verified.
-- [ ] Full daily/weekly quest configuration and remaining objective types.
-- [ ] Guild activity auditing for every action and tamper-safe guild chest rollback.
+- [x] JSON-configurable daily/weekly quests for implemented objective types.
+- [ ] Alpha, EV/EXP, evolution, PvP, fishing, broader objectives and full PvP anti-farming.
+- [ ] Audit completeness, tamper-safe chest recovery and financial transaction reconciliation.
 - [ ] Guild recovery GUI, bank/item escrow claim with double-claim prevention; OP-only restore command prepared.
 - [x] Guild homes, member capacity upgrades and announcements (code written; not runtime verified).
 - [x] Quests rotation: 2 daily + 1 weekly chosen deterministically, capture and net-new bank funding objectives.
@@ -25,4 +27,5 @@ Source-of-truth requirements: `Instrucciones.txt` (included in this package).
 - [ ] Bingo, inter-guild challenges, bounties, alliances, broader upgrades and achievements.
 - [ ] Thorough anti-dupe tests (inventory close, forced kill, concurrent sessions, player logout).
 - [ ] Long-term treasury reconciliation and world restore procedures.
-- [ ] GitHub publish complete source + CI build verification.
+- [x] GitHub source repository and Java 21 CI workflow.
+- [ ] Verified Fabric CI build and runtime integration tests.

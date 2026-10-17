@@ -18,6 +18,14 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
+      - name: Verify isolated guild domain invariants
+        run: |
+          mkdir -p /tmp/guildtests
+          javac -d /tmp/guildtests \
+            src/main/java/dev/silver/cobbleguilds/Guild.java \
+            src/main/java/dev/silver/cobbleguilds/QuestCatalog.java \
+            src/test/java/dev/silver/cobbleguilds/GuildDomainSelfTest.java
+          java -cp /tmp/guildtests dev.silver.cobbleguilds.GuildDomainSelfTest
       - name: Run build
         run: gradle --no-daemon clean build
       - name: Store build output

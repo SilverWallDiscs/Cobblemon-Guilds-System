@@ -22,7 +22,7 @@ public final class GuildService {
     private int ticks;
     private String lastTickDay = "";
     public GuildService(MinecraftServer server) {
-        this.server=server;this.config=GuildConfig.load();this.store=new GuildStore(server);this.money=new GuildMoney(server);
+        this.server=server;this.config=GuildConfig.load();GuildQuestConfig.init();this.store=new GuildStore(server);this.money=new GuildMoney(server);
         loadSpy();
         for(Guild g:store.all()) if(!g.closed) ensureQuests(g);
         store.save();
@@ -127,7 +127,9 @@ public final class GuildService {
     }
     public void bankWithdraw(ServerPlayerEntity p,BigInteger amount,boolean admin,Guild g){
         if(g==null){tell(p,"Guild not found.");return;}
-        if(!authorized(p,g,"bank_withdraw",admin)){tell(p,"No bank withdrawal permission.");return;}
+        if(!(admin && isAdmin(p,"cobbleguilds.admin.bank")) && !authorized(p,g,"bank_withdraw",admin)){
+            tell(p,"No bank withdrawal permission.");return;
+        }
         BigInteger previous=g.funds();
         if(amount.signum()<=0||amount.bitLength()>256||previous.compareTo(amount)<0){tell(p,"Insufficient guild funds.");return;}
         g.bank=previous.subtract(amount).toString();
@@ -186,7 +188,7 @@ public final class GuildService {
         if(!config.questsEnabled || g.closed)return;
         var now=ZonedDateTime.now(zone());
         String day=now.toLocalDate().toString();
-        String week=now.getYear()+"-W"+now.get(WeekFields.ISO.weekOfWeekBasedYear());
+        String week=now.get(WeekFields.ISO.weekBasedYear())+"-W"+now.get(WeekFields.ISO.weekOfWeekBasedYear());
         long dailyEnd=now.toLocalDate().plusDays(1).atStartOfDay(zone()).toInstant().toEpochMilli();
         long weeklyEnd=now.toLocalDate().plusDays(8-now.getDayOfWeek().getValue()).atStartOfDay(zone()).toInstant().toEpochMilli();
         QuestCatalog.refresh(g, day, week, dailyEnd, weeklyEnd);
@@ -195,9 +197,31 @@ public final class GuildService {
         g.quests.entrySet().removeIf(e -> e.getValue().completed && e.getValue().expiresAt < System.currentTimeMillis() - 604800000L);
     }
     /** Capture events must originate from CobblemonEvents.POKEMON_CAPTURED, not from player commands. */
-    public void captured(ServerPlayerEntity p){
+    public void captured(ServerPlayerEntity p,String species,boolean shiny,String primaryType,String secondaryType){
         Guild g=mine(p);
-        if(g!=null) contribute(g,p,"capture",1);
+        if(g==null)return;
+        contributeCapture(g,p,species,shiny,primaryType,secondaryType);
+    }
+    public void contributeCapture(Guild g,ServerPlayerEntity player,String species,boolean shiny,String primaryType,String secondaryType){
+        if(!config.questsEnabled || g.closed || !g.contains(player.getUuid()))return;
+        ensureQuests(g);
+        long now=System.currentTimeMillis();boolean changed=false;
+        for(Guild.Quest q:g.quests.values()){
+            if(q.completed || q.expiresAt<=now || q.progress()>=q.target)continue;
+            boolean accepted=switch(q.kind==null?"":q.kind){
+                case "capture"->true;
+                case "shiny_capture"->shiny;
+                case "type_capture"->q.qualifier!=null && (q.qualifier.equals(primaryType)||q.qualifier.equals(secondaryType));
+                case "unique_capture"->q.uniqueSpecies!=null && q.uniqueSpecies.add(species);
+                default ->false;
+            };
+            if(!accepted)continue;
+            int old=q.amount(player.getUuid());
+            q.contributions.put(player.getUuidAsString(), Math.min(Integer.MAX_VALUE,old+1));
+            changed=true;
+            if(q.progress()>=q.target)complete(g,q);
+        }
+        if(changed)store.save();
     }
     public void contribute(Guild g, ServerPlayerEntity player, String kind, int amount){
         if(g==null || g.closed || !config.questsEnabled || amount<=0 || !g.contains(player.getUuid())) return;
@@ -217,19 +241,20 @@ public final class GuildService {
             }
             int old=q.amount(player.getUuid());
             q.contributions.put(player.getUuidAsString(), (int)Math.min(Integer.MAX_VALUE, (long)old+effective));changed=true;
-            if(q.progress()>=q.target){
-                q.completed=true;
-                g.experience=Math.min(Long.MAX_VALUE-100000,g.experience+q.target);
-                g.level=1+(int)Math.min(9999,g.experience/1000);
-                if(q.id.startsWith("day-") && !java.time.LocalDate.now(zone()).toString().equals(g.lastCompletedDailyQuestDay)){
-                    g.questStreak++;g.lastCompletedDailyQuestDay=java.time.LocalDate.now(zone()).toString();
-                }
-                for(ServerPlayerEntity member:server.getPlayerManager().getPlayerList())
-                    if(g.contains(member.getUuid()))tell(member,"Your guild completed "+q.name+"! Claim rewards with /guild quest claim.");
-                g.addAudit("Completed quest "+q.id);
-            }
+            if(q.progress()>=q.target)complete(g,q);
         }
         if(changed)store.save();
+    }
+    private void complete(Guild g,Guild.Quest q){
+        q.completed=true;
+        g.experience=Math.min(Long.MAX_VALUE-100000,g.experience+q.target);
+        g.level=1+(int)Math.min(9999,g.experience/1000);
+        if(q.id.startsWith("day-") && !java.time.LocalDate.now(zone()).toString().equals(g.lastCompletedDailyQuestDay)){
+            g.questStreak++;g.lastCompletedDailyQuestDay=java.time.LocalDate.now(zone()).toString();
+        }
+        for(ServerPlayerEntity member:server.getPlayerManager().getPlayerList())
+            if(g.contains(member.getUuid()))tell(member,"Your guild completed "+q.name+"! Claim rewards with /guild quest claim.");
+        g.addAudit("Completed quest "+q.id);
     }
     public void listQuests(ServerPlayerEntity p){
         Guild g=mine(p);if(g==null){tell(p,"You are not in a guild.");return;}

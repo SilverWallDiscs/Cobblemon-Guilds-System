@@ -94,9 +94,9 @@ public final class GuildGui {
         if(!admin && !g.contains(p.getUuid())){GuildService.tell(p,"You are not a member of that guild.");return;}
         if(admin && !svc.isAdmin(p,"cobbleguilds.admin.gui")){GuildService.tell(p,"Access denied.");return;}
         Menu menu=new Menu(6);
-        menu.slot(10,item(Items.NAME_TAG,g.color+g.name,"§7Tag: "+g.tag,"§7Leader: "+g.leader,"§7Level: "+g.level,"§7Description: "+g.description),(pl,c)->GuildService.tell(pl,"/guild settings to manage profile (planned)"));
+        menu.slot(10,item(Items.NAME_TAG,g.color+g.name,"§7Tag: "+g.tag,"§7Leader: "+g.leader,"§7Level: "+g.level,"§7Description: "+g.description),(pl,c)->settings(pl,svc,g,admin));
         menu.slot(11,item(Items.PLAYER_HEAD,"§bMembers","§7Members: "+g.members.size()),(pl,c)->members(pl,svc,g,admin));
-        menu.slot(12,item(Items.GOLD_INGOT,"§6Guild Bank","§7Balance: $"+g.bank,"§7/guild bank deposit <amount>","§7/guild bank withdraw <amount>"),(pl,c)->GuildService.tell(pl,"Bank: $"+g.bank));
+        menu.slot(12,item(Items.GOLD_INGOT,"§6Guild Bank","§7Balance: $"+g.bank,"§7/guild bank deposit <amount>","§7/guild bank withdraw <amount>"),(pl,c)->bank(pl,svc,g,admin));
         menu.slot(13,item(Items.CHEST,"§eGuild Chest","§7"+(g.chestRows*9)+" slots"),(pl,c)->GuildMenus.openChest(pl,svc,g,admin));
         menu.slot(14,item(Items.ENCHANTED_BOOK,"§dGuild Buffs","§7/guild effects","§7Real boosts are not enabled yet"),(pl,c)->GuildService.tell(pl,"Buff purchases are disabled until real Cobblemon hooks are verified."));
         menu.slot(15,item(Items.BOOK,"§aQuests","§7/guild quest","§7/guild quest claim"),(pl,c)->quests(pl,svc,g,admin));
@@ -111,6 +111,66 @@ public final class GuildGui {
         menu.slot(40,item(Items.PAPER,"§eGuild Help","§7/guild invite <player>","§7/g <message>","§7/guild bank balance"),(pl,c)->GuildService.tell(pl,"Commands: /g, /guild bank, /guild quest, /guild effects"));
         if(admin)menu.slot(49,item(Items.BARRIER,"§cADMIN MODE","§7Viewing without joining"),(pl,c)->browse(pl,svc,0,true));
         menu.open(p,g.color+g.name+" ["+g.tag+"]");
+    }
+    private static void settings(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
+        if(!svc.authorized(p,g,"manage_settings",admin)){
+            GuildService.tell(p,"You cannot change guild settings.");return;
+        }
+        Menu menu=new Menu(3);
+        menu.slot(10,item(Items.PAPER,"§eGuild Name: "+g.name,"§7/guild settings name <name>"),(pl,c)->GuildService.tell(pl,"Use /guild settings name <name>"));
+        menu.slot(11,item(Items.NAME_TAG,"§eTag: "+g.tag,"§7/guild settings tag <tag>"),(pl,c)->GuildService.tell(pl,"Use /guild settings tag <tag>"));
+        menu.slot(12,item(Items.REDSTONE,"§eGuild Color","§7Current: "+g.color+"Example"),(pl,c)->settingColors(pl,svc,g,admin));
+        menu.slot(13,item(g.publicGuild?Items.OAK_DOOR:Items.IRON_DOOR,g.publicGuild?"§aPublic Guild":"§eApplication Only","§7Click to toggle"),(pl,c)->{
+            if(!svc.authorized(pl,g,"manage_settings",admin))return;
+            g.publicGuild=!g.publicGuild;g.addAudit(pl.getUuid()+" changed guild privacy");svc.store.save();settings(pl,svc,g,admin);
+        });
+        Item icon=Registries.ITEM.get(Identifier.of(g.icon));
+        menu.slot(14,item(icon==Items.AIR?Items.NAME_TAG:icon,"§eGuild Icon","§7Hold an item on the cursor and click","§7The item will not be consumed"),(pl,c)->{
+            if(!svc.authorized(pl,g,"manage_settings",admin))return;
+            if(c.isEmpty()){GuildService.tell(pl,"Hold an item on the cursor first.");return;}
+            g.icon=Registries.ITEM.getId(c.getItem()).toString();g.addAudit(pl.getUuid()+" changed icon");svc.store.save();settings(pl,svc,g,admin);
+        });
+        menu.slot(15,item(Items.WRITABLE_BOOK,"§eGuild Description","§7/guild settings description <text>"),(pl,c)->GuildService.tell(pl,"Use /guild settings description <text>"));
+        menu.slot(22,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));
+        menu.open(p,"Guild Settings");
+    }
+    private static void settingColors(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
+        if(!svc.authorized(p,g,"manage_settings",admin))return;
+        String[] codes={"§0","§1","§2","§3","§4","§5","§6","§7","§8","§9","§a","§b","§c","§d","§e","§f"};
+        Item[] palette={Items.BLACK_WOOL,Items.BLUE_WOOL,Items.GREEN_WOOL,Items.CYAN_TERRACOTTA,
+            Items.RED_WOOL,Items.PURPLE_WOOL,Items.ORANGE_WOOL,Items.LIGHT_GRAY_WOOL,
+            Items.GRAY_WOOL,Items.LIGHT_BLUE_WOOL,Items.LIME_WOOL,Items.CYAN_WOOL,
+            Items.RED_CONCRETE,Items.MAGENTA_WOOL,Items.YELLOW_WOOL,Items.WHITE_WOOL};
+        Menu menu=new Menu(3);
+        for(int i=0;i<16;i++){
+            String code=codes[i];menu.slot(i,item(palette[i],code+"Color: "+code.replace('§','&')),(pl,c)->{
+                if(!svc.authorized(pl,g,"manage_settings",admin))return;
+                g.color=code;g.addAudit(pl.getUuid()+" changed color");svc.store.save();settings(pl,svc,g,admin);
+            });
+        }
+        menu.slot(22,item(Items.ARROW,"Back"),(pl,c)->settings(pl,svc,g,admin));
+        menu.open(p,"Guild Colors");
+    }
+    private static void bank(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
+        if(!svc.authorized(p,g,"chest",admin) && !g.contains(p.getUuid())){
+            GuildService.tell(p,"You cannot access this guild bank.");return;
+        }
+        Menu menu=new Menu(4);
+        menu.slot(4,item(Items.GOLD_BLOCK,"§6Guild Bank: $"+g.bank,"§7Daily maintenance: $"+svc.config.dailyFeePrice), (pl,c)->{});
+        int[] slotsDeposit={10,11,12,13}, slotsWithdraw={19,20,21,22};
+        int[] amount={1000,10000,100000,1000000};
+        for(int i=0;i<4;i++){
+            java.math.BigInteger sum=java.math.BigInteger.valueOf(amount[i]);
+            menu.slot(slotsDeposit[i],item(Items.EMERALD,"§aDeposit $"+amount[i]),(pl,c)->{
+                if(!g.contains(pl.getUuid())){GuildService.tell(pl,"Deposit from your own guild only.");return;}
+                svc.bankDeposit(pl,sum);bank(pl,svc,g,admin);
+            });
+            menu.slot(slotsWithdraw[i],item(Items.GOLD_INGOT,"§eWithdraw $"+amount[i]),(pl,c)->{
+                svc.bankWithdraw(pl,sum,admin,g);bank(pl,svc,g,admin);
+            });
+        }
+        menu.slot(31,item(Items.ARROW,"§7Back"),(pl,c)->guild(pl,svc,g,admin));
+        menu.open(p,"Guild Bank");
     }
     private static void members(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
         Menu menu=new Menu(6);int i=0;

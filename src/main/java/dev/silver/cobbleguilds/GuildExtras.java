@@ -101,9 +101,9 @@ public final class GuildExtras {
         root.then(literal("settings")
             .then(literal("color").then(argument("code",StringArgumentType.word()).executes(c->{
                 var p=c.getSource().getPlayerOrThrow();Guild g=mine(p);if(!allowed(p,g,"manage_settings"))return 0;
-                String code=StringArgumentType.getString(c,"code").toLowerCase(Locale.ROOT).replace('&','§');
-                if(!code.matches("§[0-9a-f]")){tell(p,"Use a valid Minecraft color code such as &b or &c.");return 0;}
-                g.color=code;g.addAudit(p.getUuid()+" changed guild color to "+code.replace('§','&'));svc().store.save();tell(p,"Guild color updated.");return 1;
+                String code=StringArgumentType.getString(c,"code").toLowerCase(Locale.ROOT).replace("&","").replace("§","");
+                if(!code.matches("[0-9a-f]")){tell(p,"Use a valid Minecraft color code such as b or c.");return 0;}
+                g.color="§"+code;g.addAudit(p.getUuid()+" changed guild color to "+code.replace('§','&'));svc().store.save();tell(p,"Guild color updated.");return 1;
             })))
             .then(literal("icon").executes(c->{
                 var p=c.getSource().getPlayerOrThrow();Guild g=mine(p);if(!allowed(p,g,"manage_settings"))return 0;
@@ -121,6 +121,16 @@ public final class GuildExtras {
             tell(p,"Guild restored: "+g.name+" ["+g.id+"]");return 1;
         }))));
         root.then(literal("admin")
+            .then(literal("reason").then(argument("guild",StringArgumentType.word()).then(argument("uuid",StringArgumentType.word()).then(argument("reason",StringArgumentType.greedyString()).executes(c->{
+                var p=c.getSource().getPlayerOrThrow();if(!svc().isAdmin(p,"cobbleguilds.admin.moderation")){tell(p,"Access denied.");return 0;}
+                Guild g=svc().store.named(StringArgumentType.getString(c,"guild"));if(g==null)return 0;
+                String id=StringArgumentType.getString(c,"uuid");try{UUID.fromString(id);}catch(IllegalArgumentException e){tell(p,"Use a valid UUID.");return 0;}
+                if(!g.banned.contains(id)){tell(p,"That player is not banned from this guild.");return 0;}
+                String reason=StringArgumentType.getString(c,"reason").replace('§',' ').trim();
+                if(reason.isEmpty()||reason.length()>160){tell(p,"Reason must be 1-160 characters.");return 0;}
+                g.banReasons.put(id,reason);g.addAudit("ADMIN "+p.getUuid()+" updated ban reason for "+id);
+                svc().store.save();tell(p,"Guild ban reason recorded.");return 1;
+            })))))
             .then(literal("bank").then(argument("guild",StringArgumentType.word()).then(argument("amount",StringArgumentType.word()).executes(c->{
                 var p=c.getSource().getPlayerOrThrow();if(!svc().isAdmin(p,"cobbleguilds.admin.bank")){tell(p,"Access denied.");return 0;}
                 Guild g=svc().store.named(StringArgumentType.getString(c,"guild"));if(g==null)return 0;

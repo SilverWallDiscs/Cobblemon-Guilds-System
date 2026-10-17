@@ -244,14 +244,14 @@ public final class GuildCommands {
             Guild g=svc().store.named(StringArgumentType.getString(ctx,"guild"));if(g==null){GuildService.tell(pl,"Guild not found.");return 0;}
             if(g.isLeader(target.getUuid())){GuildService.tell(pl,"Transfer leadership first.");return 0;}
             g.members.remove(target.getUuidAsString());g.pending.remove(target.getUuidAsString());g.invitations.remove(target.getUuidAsString());g.ordinaryInvites.remove(target.getUuidAsString());
-            g.banned.add(target.getUuidAsString());g.addAudit(pl.getName().getString()+" admin-banned "+target.getName().getString());svc().store.save();
+            g.banned.add(target.getUuidAsString());g.banReasons.put(target.getUuidAsString(),"Banned by admin without a reason");g.addAudit(pl.getName().getString()+" admin-banned "+target.getName().getString());svc().store.save();
             GuildService.tell(pl,"Player banned from "+g.name);return ok();
         }))));
         admin.then(literal("unban").then(argument("guild",StringArgumentType.word()).then(argument("uuid",StringArgumentType.word()).executes(ctx->{
             ServerPlayerEntity pl=p(ctx);
             if(!svc().isAdmin(pl,"cobbleguilds.admin.moderation")){GuildService.tell(pl,"Access denied.");return 0;}
             Guild g=svc().store.named(StringArgumentType.getString(ctx,"guild"));if(g==null){GuildService.tell(pl,"Guild not found.");return 0;}
-            try{UUID uuid=UUID.fromString(StringArgumentType.getString(ctx,"uuid"));g.banned.remove(uuid.toString());
+            try{UUID uuid=UUID.fromString(StringArgumentType.getString(ctx,"uuid"));g.banned.remove(uuid.toString());g.banReasons.remove(uuid.toString());
                 g.addAudit(pl.getName().getString()+" admin-unbanned "+uuid);svc().store.save();GuildService.tell(pl,"Guild ban removed.");}
             catch(IllegalArgumentException ex){GuildService.tell(pl,"Use the player's UUID.");}return ok();
         }))));

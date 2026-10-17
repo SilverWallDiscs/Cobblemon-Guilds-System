@@ -105,6 +105,7 @@ public final class Guild {
         public String kind = "capture"; // capture | deposit (more event types added when their Cobblemon hooks are verified)
         public String qualifier = "";
         public String highestBankFunds = "0";
+        public Set<String> uniqueSpecies = new LinkedHashSet<>();
         public int extraMoneyForFirst = 10000, extraMoneyForSecond = 5000, extraMoneyForThird = 3000;
         public long expiresAt;
         public boolean completed;
