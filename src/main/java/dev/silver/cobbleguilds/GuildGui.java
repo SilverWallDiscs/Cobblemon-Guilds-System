@@ -63,9 +63,10 @@ public final class GuildGui {
             if(!value.matches("[A-Za-z0-9]{2,4}")){GuildService.tell(pl,"Invalid guild tag.");create(pl,svc);return;}
             d.tag=value;create(pl,svc);
         }));
-        m.slot(13,item(material(d.icon),"§eGuild Icon","§7Pick up an item on your cursor","§7Click here to copy its appearance","§7Your item will not be consumed"),(p,c)->{
-            if(c.isEmpty()){GuildService.tell(p,"Hold any item on the cursor first.");return;}
-            d.icon=Registries.ITEM.getId(c.getItem()).toString();create(p,svc);
+        m.slot(13,item(material(d.icon),"§eGuild Icon","§7Pick up an item or hold it in main hand","§7Click here to copy its appearance","§7Your item will not be consumed"),(p,c)->{
+            ItemStack icon=c.isEmpty()?p.getMainHandStack():c;
+            if(icon.isEmpty()){GuildService.tell(p,"Hold an item in your hand or cursor first.");return;}
+            d.icon=Registries.ITEM.getId(icon.getItem()).toString();create(p,svc);
         });
         m.slot(15,item(Items.REDSTONE,"§eGuild Color: "+d.color+"Example","§7Click to choose a color"),(p,c)->colors(p,svc,null,false));
         m.slot(16,item(d.publicGuild?Items.OAK_DOOR:Items.IRON_DOOR,d.publicGuild?"§aPublic Guild":"§eApplications Required","§7Click to toggle"),(p,c)->{d.publicGuild=!d.publicGuild;create(p,svc);});
@@ -189,10 +190,11 @@ public final class GuildGui {
             if(!can(pl,svc,g,"manage_settings",admin))return;
             g.publicGuild=!g.publicGuild;svc.store.save();settings(pl,svc,g,admin);
         });
-        m.slot(14,item(material(g.icon),"§eGuild Icon","§7Hold any item on cursor and click","§7Your item is not consumed"),(pl,c)->{
+        m.slot(14,item(material(g.icon),"§eGuild Icon","§7Item in hand or cursor","§7Your item is not consumed"),(pl,c)->{
             if(!can(pl,svc,g,"manage_settings",admin))return;
-            if(c.isEmpty()){GuildService.tell(pl,"Pick up an item with your cursor first.");return;}
-            g.icon=Registries.ITEM.getId(c.getItem()).toString();svc.store.save();settings(pl,svc,g,admin);
+            ItemStack icon=c.isEmpty()?pl.getMainHandStack():c;
+            if(icon.isEmpty()){GuildService.tell(pl,"Hold an item in your hand or cursor first.");return;}
+            g.icon=Registries.ITEM.getId(icon.getItem()).toString();svc.store.save();settings(pl,svc,g,admin);
         });
         m.slot(15,item(Items.WRITABLE_BOOK,"§eDescription","§7"+g.description,"§7Click to edit in chat"),(pl,c)->ask(pl,"a description (max 220 characters)",(a,value)->{
             if(!can(a,svc,g,"manage_settings",admin))return;
@@ -298,20 +300,35 @@ public final class GuildGui {
     }
     private static void pending(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
         if(!can(p,svc,g,"manage_applications",admin))return;
-        Menu m=new Menu(6);int i=0;
+        Menu m=new Menu(6);int slot=0;
         for(String id:List.copyOf(g.pending)){
-            if(i>=45)break;
+            if(slot>=45)break;
             ServerPlayerEntity online=svc.server.getPlayerManager().getPlayer(UUID.fromString(id));
-            m.slot(i++,item(Items.PLAYER_HEAD,"§e"+(online==null?id:online.getName().getString()),"§aClick to approve this application"),(pl,c)->{
-                if(!can(pl,svc,g,"manage_applications",admin))return;
-                if(!g.pending.contains(id))return;
-                if(c.isEmpty()){} // action uses registered button, see Menu.onSlotClick
-                if(svc.store.member(UUID.fromString(id))!=null||g.members.size()>=g.capacity(svc.config.maxGuildMembers)){GuildService.tell(pl,"Applicant unavailable or guild full.");return;}
-                g.pending.remove(id);g.members.put(id,g.defaultRank());if(online!=null)g.memberNames.put(id,online.getName().getString());
-                g.addAudit(pl.getUuid()+" accepted "+id);svc.store.save();pending(pl,svc,g,admin);
-            });
+            m.slot(slot++,item(Items.PLAYER_HEAD,"§e"+(online==null?id:online.getName().getString()),"§7Click to review application"),(pl,c)->reviewApplication(pl,svc,g,admin,id));
         }
         m.slot(49,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Guild Applications");
+    }
+    private static void reviewApplication(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin,String id){
+        if(!can(p,svc,g,"manage_applications",admin)||!g.pending.contains(id)){pending(p,svc,g,admin);return;}
+        ServerPlayerEntity online=svc.server.getPlayerManager().getPlayer(UUID.fromString(id));
+        Menu m=new Menu(3);
+        m.slot(4,item(Items.PLAYER_HEAD,"§e"+(online==null?id:online.getName().getString()),"§7Pending application"),(pl,c)->{});
+        m.slot(11,item(Items.EMERALD_BLOCK,"§aAccept Player"),(pl,c)->{
+            if(!can(pl,svc,g,"manage_applications",admin)||!g.pending.contains(id))return;
+            if(svc.store.member(UUID.fromString(id))!=null || g.members.size()>=g.capacity(svc.config.maxGuildMembers)){
+                GuildService.tell(pl,"Cannot accept: player in a guild or guild is full.");return;
+            }
+            g.pending.remove(id);g.members.put(id,g.defaultRank());
+            if(online!=null){g.memberNames.put(id,online.getName().getString());GuildService.tell(online,"Your application to "+g.name+" was accepted.");}
+            g.addAudit(pl.getUuid()+" approved "+id);svc.store.save();pending(pl,svc,g,admin);
+        });
+        m.slot(15,item(Items.BARRIER,"§cDecline Application"),(pl,c)->{
+            if(!can(pl,svc,g,"manage_applications",admin)||!g.pending.contains(id))return;
+            g.pending.remove(id);g.addAudit(pl.getUuid()+" declined "+id);svc.store.save();
+            if(online!=null)GuildService.tell(online,"Your application to "+g.name+" was declined.");
+            pending(pl,svc,g,admin);
+        });
+        m.slot(22,item(Items.ARROW,"Back"),(pl,c)->pending(pl,svc,g,admin));m.open(p,"Review Application");
     }
     private static void members(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin,int page){
         Menu m=new Menu(6);List<String> ids=new ArrayList<>(g.members.keySet());int from=page*45;
@@ -566,9 +583,15 @@ public final class GuildGui {
             this.size=rows*9;this.callbacks=actions;
         }
         @Override public void onSlotClick(int slot,int button,SlotActionType type,PlayerEntity player){
-            if(slot<0||slot>=size||button!=0||type!=SlotActionType.PICKUP||!(player instanceof ServerPlayerEntity p))return;
+            if(!(player instanceof ServerPlayerEntity p))return;
+            // Only normal pickup in the player's own inventory is permitted, so users
+            // can choose a guild icon while this menu is open. No shift-click, swap,
+            // dragging, dropping or movement into the virtual menu is ever allowed.
+            if(slot>=size && slot<size+36 && type==SlotActionType.PICKUP && (button==0||button==1)){
+                super.onSlotClick(slot,button,type,player);return;
+            }
+            if(slot<0||slot>=size||button!=0||type!=SlotActionType.PICKUP)return;
             Click action=callbacks.get(slot);if(action!=null)action.run(p,getCursorStack());
-            // Never call super: every icon is read-only. Held cursor items stay untouched.
         }
         @Override public ItemStack quickMove(PlayerEntity player,int slot){return ItemStack.EMPTY;}
     }

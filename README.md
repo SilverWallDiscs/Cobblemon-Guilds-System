@@ -1,6 +1,6 @@
 # Cobblemon Guilds System
 
-**Version:** `0.3.1-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
+**Version:** `0.3.2-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
 
 This alpha targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is installed **only on the dedicated server** (`fabric.mod.json` uses `"environment": "server"`). Players need only the normal client mods required by the server. It does not register client entrypoints, add HUDs, use bossbars, scoreboards or sidebars.
 
@@ -11,7 +11,7 @@ This alpha targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is inst
 - Open `/guilds` (or `/guild`). Create or browse guilds through vanilla chest menus.
 - Click **Name**, **Tag**, **Description**, **Announcement**, **Custom Bank Amount** or **Invite Player** to enter a **private one-shot chat prompt**. Type a response normally in chat; the message is intercepted and never broadcast. Type `cancel` to cancel. The relevant menu reopens after a successful response.
 - Create guilds without `/guild draft`: **this command has been removed**. Most gameplay command trees have been removed in favor of GUI controls. Minimal shortcuts remain: `/guilds`, `/guild`, `/guild home`, `/guild effects`, `/guild quests`, `/guild buffs`, `/guild announcement`, `/g`, `/ga`, `/guild admin`, `/guild chatspy`.
-- Use click-to-edit menus for rank priorities, rank default status and permissions, member ranks and kicks (with confirmation), applications, guild colors, settings, guild chat, leadership transfers and disbanding.
+- Use click-to-edit menus for rank priorities, rank default status and permissions, member ranks and kicks (with confirmation), approval/decline of applications, guild colors, settings, guild chat, leadership transfers and disbanding.
 - Access Guild Bank, Chest, Buff Shop and active effect timers, Quests, Bingo, Weekly Challenge, Achievements, Milestones, Bounties, Alliances, Experience and Home through the **Guild Main Menu**.
 - Staff use `/guild admin` to browse every guild with the guild's name and leader, inspect their data, and manage authorized settings **without joining the guild**.
 - `/guild home` actually teleports to the guild home; GUI Home offers teleport and setting the location. `/guild announcement` remains an optional shortcut, with announcement editing available in the menu.
@@ -53,3 +53,8 @@ Admin menu: `/guild admin`. Chat monitoring: `/guild chatspy` (OP 4 or correspon
 - Captures outside vanilla spawn pipeline, optional addons, and special Alpha/hidden-ability mechanics.
 - Menus are server-side chests, not a graphical custom client screen. Offline skins may require a real profile texture cache; this alpha uses known/online profiles.
 - Full staff offline-member moderation and archived guild asset payouts are not yet implemented in menus.
+
+## 0.3.2 interface patch
+
+- The icon picker can now copy the selected item from the cursor or main hand without removing it. Normal pickup from the player inventory is permitted inside locked guild menus, but quick-move/shift-click remains blocked.
+- Guild membership applications now have **Accept** and **Decline** confirmation choices in the GUI.
