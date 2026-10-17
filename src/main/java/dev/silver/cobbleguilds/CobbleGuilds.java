@@ -25,15 +25,9 @@ public final class CobbleGuilds implements ModInitializer {
         return service;
     }
     @Override public void onInitialize(){
-        // Signed-chat-safe decoration. Prefixes the MESSAGE, allowing other chat plugins to retain the sender/rank.
-        ServerMessageDecoratorEvent.EVENT.register(ServerMessageDecoratorEvent.CONTENT_PHASE,(sender,message)->{
-            if(sender==null || service==null)return message;
-            Guild g=service.store.member(sender.getUuid());
-            if(g==null)return message;
-            char code=g.color!=null && g.color.matches("§[0-9a-f]")?g.color.charAt(1):'7';
-            Formatting format=Formatting.byCode(code);
-            return Text.literal("["+g.tag+"] ").formatted(format==null?Formatting.GRAY:format).append(message);
-        });
+        // Guild tag chat-name prefixes are handled by PlayerManagerMixin. The signed
+        // message body is never modified; no sidebar or client packet is required.
+        GuildChatInput.register();
         CommandRegistrationCallback.EVENT.register((dispatcher,registryAccess,environment)->GuildCommands.register(dispatcher));
         ServerLifecycleEvents.SERVER_STARTED.register(server->{
             service=new GuildService(server);

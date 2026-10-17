@@ -26,6 +26,10 @@ jobs:
             src/main/java/dev/silver/cobbleguilds/QuestCatalog.java \
             src/test/java/dev/silver/cobbleguilds/GuildDomainSelfTest.java
           java -cp /tmp/guildtests dev.silver.cobbleguilds.GuildDomainSelfTest
+      - name: Verify rebalanced leveling and legacy XP conversion
+        run: |
+          javac -d /tmp/guildtests src/main/java/dev/silver/cobbleguilds/Guild.java src/main/java/dev/silver/cobbleguilds/GuildLevels.java src/test/java/dev/silver/cobbleguilds/GuildLevelsSelfTest.java
+          java -cp /tmp/guildtests dev.silver.cobbleguilds.GuildLevelsSelfTest
       - name: Verify buff probability and overflow maths
         run: |
           javac -d /tmp/guildtests src/main/java/dev/silver/cobbleguilds/GuildBuffMath.java src/test/java/dev/silver/cobbleguilds/GuildBuffMathSelfTest.java

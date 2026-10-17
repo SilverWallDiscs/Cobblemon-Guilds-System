@@ -218,5 +218,27 @@ public final class GuildExtras {
                 tell(p,"Guild bans for "+g.name+":");for(String id:g.banned)tell(p,id+" - "+g.banReasons.getOrDefault(id,"No reason recorded"));return 1;
             }))));
     }
+    /** Menu equivalents of /guild sethome and /guild home; commands remain optional shortcuts. */
+    public static void setHome(ServerPlayerEntity p){
+        Guild g=svc().mine(p);if(!allowed(p,g,"manage_home"))return;
+        if(!svc().config.guildHomesEnabled){tell(p,"Guild homes are disabled.");return;}
+        g.homeWorld=p.getServerWorld().getRegistryKey().getValue().toString();
+        g.homeX=p.getX();g.homeY=p.getY();g.homeZ=p.getZ();g.homeYaw=p.getYaw();g.homePitch=p.getPitch();
+        g.addAudit(p.getUuid()+" set guild home");svc().store.save();tell(p,"Guild home saved.");
+    }
+    public static void teleportHome(ServerPlayerEntity p){
+        Guild g=mine(p);if(g==null)return;
+        if(!svc().config.guildHomesEnabled||g.homeWorld.isBlank()){tell(p,"Your guild home is not set.");return;}
+        ServerWorld world;
+        try{world=svc().server.getWorld(RegistryKey.of(RegistryKeys.WORLD,Identifier.of(g.homeWorld)));}
+        catch(Exception ex){tell(p,"Invalid guild home dimension.");return;}
+        if(world==null){tell(p,"Guild home world is unavailable.");return;}
+        long now=System.currentTimeMillis();Long used=lastHomeUse.get(p.getUuid());
+        long delay=(long)svc().config.guildHomeCooldownSeconds*1000;
+        if(used!=null&&now-used<delay){tell(p,"Guild home cooldown: "+((delay-(now-used)+999)/1000)+" seconds.");return;}
+        if(!world.getWorldBorder().contains(net.minecraft.util.math.BlockPos.ofFloored(g.homeX,g.homeY,g.homeZ))){tell(p,"Guild home outside world border.");return;}
+        p.teleport(world,g.homeX,g.homeY,g.homeZ,g.homeYaw,g.homePitch);
+        lastHomeUse.put(p.getUuid(),now);tell(p,"Teleported to guild home.");
+    }
     private static final Map<UUID,Long> lastHomeUse=new HashMap<>();
 }

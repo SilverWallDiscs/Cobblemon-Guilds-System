@@ -19,7 +19,10 @@ public final class GuildStore {
             if(Files.exists(data)) {
                 Map<String,Guild> loaded=GuildConfig.JSON.fromJson(Files.readString(data),
                     new TypeToken<Map<String,Guild>>(){}.getType());
-                if(loaded!=null) guilds.putAll(loaded);
+                if(loaded!=null) {
+                    guilds.putAll(loaded);
+                    for(Guild guild:guilds.values())if(guild.memberNames==null)guild.memberNames=new LinkedHashMap<>();
+                }
             }
         } catch(Exception e){ throw new IllegalStateException("Unable to load guild data - not starting to prevent data loss",e); }
     }

@@ -24,6 +24,8 @@ public final class Guild {
     public int chestRows = 1;
     public int level = 1;
     public long experience = 0;
+    public int xpCurveVersion = 0;
+    public Map<String,String> memberNames = new LinkedHashMap<>();
     public Map<String, Effect> effects = new LinkedHashMap<>();
     public Map<String, Quest> quests = new LinkedHashMap<>();
     public String lastFeeDay = "";
@@ -54,6 +56,7 @@ public final class Guild {
     public static Guild fresh(UUID creator, String name, String tag, String color, boolean publicGuild, String description) {
         Guild g = new Guild();
         g.name = name; g.tag = tag; g.color = color;
+        g.xpCurveVersion = 1;
         g.publicGuild = publicGuild; g.description = description;
         g.leader = creator.toString();
         g.members.put(g.leader, "leader");

@@ -32,22 +32,6 @@ public final class GuildCommands {
         root.then(literal("menu").executes(ctx->{GuildGui.start(p(ctx),svc());return ok();}));
         root.then(literal("browse").executes(ctx->{GuildGui.browse(p(ctx),svc(),0,false);return ok();}));
         root.then(literal("create").executes(ctx->{GuildGui.create(p(ctx),svc());return ok();}));
-        root.then(literal("draft")
-            .then(literal("name").then(argument("text",StringArgumentType.greedyString()).executes(ctx->{
-                ServerPlayerEntity player=p(ctx);String s=StringArgumentType.getString(ctx,"text");
-                if(s.length()>24){GuildService.tell(player,"Maximum name length: 24.");return 0;}
-                GuildGui.draft(player).name=s;GuildGui.create(player,svc());return ok();
-            })))
-            .then(literal("tag").then(argument("tag",StringArgumentType.word()).executes(ctx->{
-                ServerPlayerEntity player=p(ctx);String tag=StringArgumentType.getString(ctx,"tag");
-                if(!tag.matches("[A-Za-z0-9]{2,4}")){GuildService.tell(player,"Tag must be 2-4 letters/numbers.");return 0;}
-                GuildGui.draft(player).tag=tag;GuildGui.create(player,svc());return ok();
-            })))
-            .then(literal("description").then(argument("text",StringArgumentType.greedyString()).executes(ctx->{
-                ServerPlayerEntity player=p(ctx);String desc=StringArgumentType.getString(ctx,"text");
-                if(desc.length()>220){GuildService.tell(player,"Description maximum: 220 characters.");return 0;}
-                GuildGui.draft(player).description=desc;GuildGui.create(player,svc());return ok();
-            }))));
         root.then(literal("join").then(argument("guild",StringArgumentType.greedyString()).executes(ctx->{
             svc().join(p(ctx),StringArgumentType.getString(ctx,"guild"));return ok();
         })));

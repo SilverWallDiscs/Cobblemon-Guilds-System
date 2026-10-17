@@ -24,7 +24,7 @@ public final class GuildService {
     public GuildService(MinecraftServer server) {
         this.server=server;this.config=GuildConfig.load();GuildQuestConfig.init();this.store=new GuildStore(server);this.money=new GuildMoney(server);
         loadSpy();
-        for(Guild g:store.all()) if(!g.closed) ensureQuests(g);
+        for(Guild g:store.all()) { GuildLevels.reconcile(g); if(!g.closed) ensureQuests(g); }
         store.save();
     }
     public static void tell(ServerPlayerEntity p,String msg){p.sendMessage(Text.literal("§6[Guilds] §f"+msg),false);}
@@ -60,6 +60,7 @@ public final class GuildService {
         BigInteger price=GuildMoney.amount(config.guildCreatePrice);
         if(!money.debit(p,price)){tell(p,"Not enough CobbleDollars. Guild creation costs $"+price+".");return false;}
         Guild g=Guild.fresh(p.getUuid(),name,tag,color,publicGuild,desc);
+        g.memberNames.put(p.getUuidAsString(),p.getName().getString());
         g.lastFeeDay=java.time.LocalDate.now(zone()).toString();
         g.addAudit(p.getName().getString()+" created guild");
         try { ensureQuests(g);store.put(g); }
@@ -74,7 +75,7 @@ public final class GuildService {
         if(g.banned.contains(id)){tell(p,"You are banned from that guild.");return;}
         if(g.members.size()>=g.capacity(config.maxGuildMembers)){tell(p,"This guild is full.");return;}
         if(g.publicGuild || g.invitations.remove(id)){
-            g.pending.remove(id);g.ordinaryInvites.remove(id);g.members.put(id,g.defaultRank());
+            g.pending.remove(id);g.ordinaryInvites.remove(id);g.members.put(id,g.defaultRank());g.memberNames.put(id,p.getName().getString());
             g.addAudit(p.getName().getString()+" joined");store.save();
             tell(p,"Joined guild §e"+g.name+"§f!");
         }else{
@@ -98,7 +99,7 @@ public final class GuildService {
         if(g==null||!g.allowed(moderator.getUuid(),"manage_applications")){tell(moderator,"You cannot manage applications.");return;}
         if(!g.pending.contains(target.getUuidAsString())){tell(moderator,"No pending application for this player.");return;}
         if(mine(target)!=null || g.members.size()>=g.capacity(config.maxGuildMembers)){tell(moderator,"The player cannot join.");return;}
-        g.pending.remove(target.getUuidAsString());g.members.put(target.getUuidAsString(),g.defaultRank());
+        g.pending.remove(target.getUuidAsString());g.members.put(target.getUuidAsString(),g.defaultRank());g.memberNames.put(target.getUuidAsString(),target.getName().getString());
         g.addAudit(moderator.getName().getString()+" approved "+target.getName().getString());store.save();
         tell(target,"Your application to "+g.name+" was accepted.");tell(moderator,"Application accepted.");
     }
@@ -258,8 +259,7 @@ public final class GuildService {
         q.completed=true;g.questsCompleted++;
         if(g.questsCompleted>=10 && g.achievements.add("Quest Adventurers"))g.addAudit("Achievement unlocked: Quest Adventurers");
         if(g.questsCompleted>=100 && g.achievements.add("Quest Masters"))g.addAudit("Achievement unlocked: Quest Masters");
-        g.experience=Math.min(Long.MAX_VALUE-100000,g.experience+q.target);
-        g.level=1+(int)Math.min(9999,g.experience/1000);
+        GuildLevels.grant(g,GuildLevels.questReward(q.target));
         if(q.id.startsWith("day-") && !java.time.LocalDate.now(zone()).toString().equals(g.lastCompletedDailyQuestDay)){
             java.time.LocalDate today=java.time.LocalDate.now(zone());
             boolean consecutive;
@@ -281,8 +281,7 @@ public final class GuildService {
                     if(slot==null || !slot.completed){line=false;break;}
                 }
                 if(line && g.completedBingoLines.add(prefix+"line-"+i)){
-                    g.experience=Math.min(Long.MAX_VALUE-10000,g.experience+Math.max(0,config.bingoLineExperience));
-                    g.level=1+(int)Math.min(9999,g.experience/1000);
+                    GuildLevels.grant(g,Math.min(150,Math.max(0,config.bingoLineExperience)));
                     g.addAudit("Completed weekly Bingo line "+i);
                     for(ServerPlayerEntity member:server.getPlayerManager().getPlayerList())
                         if(g.contains(member.getUuid()))tell(member,"Bingo! Your guild completed a row for "+config.bingoLineExperience+" XP.");
@@ -336,6 +335,11 @@ public final class GuildService {
     }
     public void onTick(){
         if(++ticks%20!=0)return;
+        for(ServerPlayerEntity online:server.getPlayerManager().getPlayerList()){
+            Guild member=mine(online);if(member!=null&&member.memberNames!=null){
+                member.memberNames.put(online.getUuidAsString(),online.getGameProfile().getName());
+            }
+        }
         ZonedDateTime now=ZonedDateTime.now(zone());
         String day=now.toLocalDate().toString();
         if(!day.equals(lastTickDay)){
