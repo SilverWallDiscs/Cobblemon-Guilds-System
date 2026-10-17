@@ -41,6 +41,14 @@ public final class Guild {
     public String lastQuestDay = "";
     public String lastQuestWeek = "";
     public int questStreak = 0;
+    public long totalCaptures = 0;
+    public long weeklyCaptures = 0;
+    public String weeklyCapturePeriod = "";
+    public int questsCompleted = 0;
+    public Set<String> achievements = new LinkedHashSet<>();
+    public Set<String> allies = new LinkedHashSet<>();
+    public Set<String> incomingAlliances = new LinkedHashSet<>();
+    public Set<String> completedBingoLines = new LinkedHashSet<>();
     public String lastCompletedDailyQuestDay = "";
 
     public static Guild fresh(UUID creator, String name, String tag, String color, boolean publicGuild, String description) {

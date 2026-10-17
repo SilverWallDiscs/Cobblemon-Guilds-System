@@ -191,7 +191,7 @@ public final class GuildService {
         String week=now.get(WeekFields.ISO.weekBasedYear())+"-W"+now.get(WeekFields.ISO.weekOfWeekBasedYear());
         long dailyEnd=now.toLocalDate().plusDays(1).atStartOfDay(zone()).toInstant().toEpochMilli();
         long weeklyEnd=now.toLocalDate().plusDays(8-now.getDayOfWeek().getValue()).atStartOfDay(zone()).toInstant().toEpochMilli();
-        QuestCatalog.refresh(g, day, week, dailyEnd, weeklyEnd);
+        QuestCatalog.refresh(g, day, week, dailyEnd, weeklyEnd, config.bingoEnabled);
         g.quests.entrySet().removeIf(e -> !e.getValue().completed && e.getValue().expiresAt < System.currentTimeMillis() - 172800000L);
         // Completed quests are retained for 7 days after expiry so returning contributors can claim.
         g.quests.entrySet().removeIf(e -> e.getValue().completed && e.getValue().expiresAt < System.currentTimeMillis() - 604800000L);
@@ -203,9 +203,17 @@ public final class GuildService {
         contributeCapture(g,p,species,shiny,primaryType,secondaryType);
     }
     public void contributeCapture(Guild g,ServerPlayerEntity player,String species,boolean shiny,String primaryType,String secondaryType){
-        if(!config.questsEnabled || g.closed || !g.contains(player.getUuid()))return;
+        if(g.closed || !g.contains(player.getUuid()))return;
+        g.totalCaptures++;
+        String period=currentWeek();
+        if(!period.equals(g.weeklyCapturePeriod)){g.weeklyCapturePeriod=period;g.weeklyCaptures=0;}
+        g.weeklyCaptures++;
+        if(g.totalCaptures>=100 && g.achievements.add("First 100 Captures"))g.addAudit("Achievement unlocked: First 100 Captures");
+        if(g.totalCaptures>=1000 && g.achievements.add("Pokémon Collectors"))g.addAudit("Achievement unlocked: Pokémon Collectors");
+        if(g.totalCaptures>=10000 && g.achievements.add("Capture Legends"))g.addAudit("Achievement unlocked: Capture Legends");
+        if(!config.questsEnabled){store.save();return;}
         ensureQuests(g);
-        long now=System.currentTimeMillis();boolean changed=false;
+        long now=System.currentTimeMillis();boolean changed=true;
         for(Guild.Quest q:g.quests.values()){
             if(q.completed || q.expiresAt<=now || q.progress()>=q.target)continue;
             boolean accepted=switch(q.kind==null?"":q.kind){
@@ -213,6 +221,7 @@ public final class GuildService {
                 case "shiny_capture"->shiny;
                 case "type_capture"->q.qualifier!=null && (q.qualifier.equals(primaryType)||q.qualifier.equals(secondaryType));
                 case "unique_capture"->q.uniqueSpecies!=null && q.uniqueSpecies.add(species);
+                case "species_capture"->q.qualifier!=null && q.qualifier.equals(species);
                 default ->false;
             };
             if(!accepted)continue;
@@ -246,15 +255,40 @@ public final class GuildService {
         if(changed)store.save();
     }
     private void complete(Guild g,Guild.Quest q){
-        q.completed=true;
+        q.completed=true;g.questsCompleted++;
+        if(g.questsCompleted>=10 && g.achievements.add("Quest Adventurers"))g.addAudit("Achievement unlocked: Quest Adventurers");
+        if(g.questsCompleted>=100 && g.achievements.add("Quest Masters"))g.addAudit("Achievement unlocked: Quest Masters");
         g.experience=Math.min(Long.MAX_VALUE-100000,g.experience+q.target);
         g.level=1+(int)Math.min(9999,g.experience/1000);
         if(q.id.startsWith("day-") && !java.time.LocalDate.now(zone()).toString().equals(g.lastCompletedDailyQuestDay)){
-            g.questStreak++;g.lastCompletedDailyQuestDay=java.time.LocalDate.now(zone()).toString();
+            java.time.LocalDate today=java.time.LocalDate.now(zone());
+            boolean consecutive;
+            try{consecutive=java.time.LocalDate.parse(g.lastCompletedDailyQuestDay).plusDays(1).equals(today);}
+            catch(Exception ex){consecutive=false;}
+            g.questStreak=consecutive?g.questStreak+1:1;
+            g.lastCompletedDailyQuestDay=today.toString();
         }
         for(ServerPlayerEntity member:server.getPlayerManager().getPlayerList())
             if(g.contains(member.getUuid()))tell(member,"Your guild completed "+q.name+"! Claim rewards with /guild quest claim.");
         g.addAudit("Completed quest "+q.id);
+        if(q.id.startsWith("bingo-")){
+            String prefix=q.id.substring(0,q.id.lastIndexOf('-')+1);
+            int[][] lines={{0,1,2},{3,4,5},{6,7,8},{0,3,6},{1,4,7},{2,5,8},{0,4,8},{2,4,6}};
+            for(int i=0;i<lines.length;i++){
+                boolean line=true;
+                for(int tile:lines[i]){
+                    Guild.Quest slot=g.quests.get(prefix+tile);
+                    if(slot==null || !slot.completed){line=false;break;}
+                }
+                if(line && g.completedBingoLines.add(prefix+"line-"+i)){
+                    g.experience=Math.min(Long.MAX_VALUE-10000,g.experience+Math.max(0,config.bingoLineExperience));
+                    g.level=1+(int)Math.min(9999,g.experience/1000);
+                    g.addAudit("Completed weekly Bingo line "+i);
+                    for(ServerPlayerEntity member:server.getPlayerManager().getPlayerList())
+                        if(g.contains(member.getUuid()))tell(member,"Bingo! Your guild completed a row for "+config.bingoLineExperience+" XP.");
+                }
+            }
+        }
     }
     public void listQuests(ServerPlayerEntity p){
         Guild g=mine(p);if(g==null){tell(p,"You are not in a guild.");return;}
@@ -333,5 +367,28 @@ public final class GuildService {
         }
     }
     private String lastWarning="";
+    public String currentWeek(){
+        ZonedDateTime now=ZonedDateTime.now(zone());
+        return now.get(WeekFields.ISO.weekBasedYear())+"-W"+now.get(WeekFields.ISO.weekOfWeekBasedYear());
+    }
+    public void sendAllianceChat(ServerPlayerEntity p,String message){
+        Guild g=mine(p);if(g==null){tell(p,"You are not in a guild.");return;}
+        String content=message.replace('§',' ').trim();if(content.isBlank())return;
+        String line="§b[Alliance] "+g.color+"["+g.tag+"] §f"+p.getName().getString()+": "+content;
+        Set<UUID> recipients=new HashSet<>();
+        for(ServerPlayerEntity online:server.getPlayerManager().getPlayerList()){
+            if(g.contains(online.getUuid()))recipients.add(online.getUuid());
+            else for(String id:g.allies){Guild ally=store.byId(id);
+                if(ally!=null && !ally.closed && ally.allies.contains(g.id) && ally.contains(online.getUuid())){
+                    recipients.add(online.getUuid());break;
+                }
+            }
+        }
+        for(ServerPlayerEntity online:server.getPlayerManager().getPlayerList()){
+            if(recipients.contains(online.getUuid()))online.sendMessage(Text.literal(line),false);
+            else if(spy.contains(online.getUuid()) && isAdmin(online,"cobbleguilds.admin.chatspy"))
+                online.sendMessage(Text.literal("§8[GuildSpy-Alliance] "+line),false);
+        }
+    }
     public ZoneId zone(){try{return "system".equalsIgnoreCase(config.timeZone)?ZoneId.systemDefault():ZoneId.of(config.timeZone);}catch(Exception e){return ZoneId.systemDefault();}}
 }

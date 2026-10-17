@@ -36,8 +36,8 @@ public final class GuildQuestConfig {
                 if(e==null || !e.enabled)continue;
                 if(e.name==null || e.name.isBlank() || e.name.length()>48 || e.target<1 || e.target>200000000
                     || e.minimum<1 || e.minimum>e.target || e.candies<0 || e.candies>64)continue;
-                if(e.kind==null || !Set.of("capture","shiny_capture","type_capture","unique_capture","deposit").contains(e.kind))continue;
-                if("type_capture".equals(e.kind) && (e.qualifier==null || !e.qualifier.matches("[a-z]{3,15}")))continue;
+                if(e.kind==null || !Set.of("capture","shiny_capture","type_capture","unique_capture","deposit","species_capture").contains(e.kind))continue;
+                if(("type_capture".equals(e.kind) || "species_capture".equals(e.kind)) && (e.qualifier==null || !e.qualifier.matches("[a-z]{3,15}")))continue;
                 QuestCatalog.Definition def=new QuestCatalog.Definition(e.name,e.kind,e.qualifier==null?"":e.qualifier,e.target,e.minimum,e.candies);
                 if("daily".equals(e.cadence)) daily.add(def);
                 if("weekly".equals(e.cadence)) weekly.add(def);

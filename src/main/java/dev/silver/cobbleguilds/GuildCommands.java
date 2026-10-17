@@ -25,6 +25,9 @@ public final class GuildCommands {
         d.register(literal("g").then(argument("message",StringArgumentType.greedyString()).executes(ctx->{
             svc().sendGuildChat(p(ctx),StringArgumentType.getString(ctx,"message"));return ok();
         })));
+        d.register(literal("ga").then(argument("message",StringArgumentType.greedyString()).executes(ctx->{
+            svc().sendAllianceChat(p(ctx),StringArgumentType.getString(ctx,"message"));return ok();
+        })));
         var root=literal("guild").executes(ctx->{GuildGui.start(p(ctx),svc());return ok();});
         root.then(literal("menu").executes(ctx->{GuildGui.start(p(ctx),svc());return ok();}));
         root.then(literal("browse").executes(ctx->{GuildGui.browse(p(ctx),svc(),0,false);return ok();}));
@@ -77,6 +80,9 @@ public final class GuildCommands {
             else GuildMenus.openChest(player,svc(),g,false);return ok();
         }).then(literal("upgrade").executes(ctx->{svc().upgradeChest(p(ctx));return ok();})));
         root.then(literal("quests").executes(ctx->{svc().listQuests(p(ctx));return ok();}));
+        root.then(literal("bingo").executes(ctx->{ServerPlayerEntity pl=p(ctx);Guild g=svc().mine(pl);
+            if(g==null){GuildService.tell(pl,"You are not in a guild.");return 0;}
+            GuildGui.bingo(pl,svc(),g,false);return ok();}));
         root.then(literal("quest")
             .executes(ctx->{svc().listQuests(p(ctx));return ok();})
             .then(literal("claim").executes(ctx->{svc().claim(p(ctx));return ok();})));
@@ -90,7 +96,12 @@ public final class GuildCommands {
         root.then(literal("buff").then(literal("buy").then(argument("id",StringArgumentType.word()).executes(ctx->{
             GuildService.tell(p(ctx),"Buff purchases are temporarily disabled: no CobbleDollars charged. Cobblemon effect hooks require verification.");return 0;
         }))));
-        root.then(literal("top").executes(ctx->{
+        root.then(literal("top").then(literal("captures").executes(ctx->{
+            ServerPlayerEntity player=p(ctx);
+            List<Guild> top=svc().store.all().stream().filter(g->!g.closed).sorted((a,b)->Long.compare(b.totalCaptures,a.totalCaptures)).limit(10).toList();
+            GuildService.tell(player,"Guild Leaderboard (Captures):");int place=1;
+            for(Guild g:top)GuildService.tell(player,(place++)+". "+g.name+" ["+g.tag+"] - "+g.totalCaptures+" captures");return ok();
+        })).executes(ctx->{
             ServerPlayerEntity player=p(ctx);
             List<Guild> top=svc().store.all().stream().filter(g->!g.closed).sorted((a,b)->Long.compare(b.experience,a.experience)).limit(10).toList();
             GuildService.tell(player,"Guild Leaderboard (Experience):");int place=1;
@@ -129,6 +140,7 @@ public final class GuildCommands {
         registerRoles(root);
         registerAdmin(root);
         GuildExtras.attach(root);
+        GuildAdminCommands.attach(root);
         d.register(root);
     }
     private static boolean canEditSettings(ServerPlayerEntity pl,Guild g){

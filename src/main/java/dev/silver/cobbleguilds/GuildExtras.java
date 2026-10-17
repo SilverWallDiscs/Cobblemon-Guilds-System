@@ -110,6 +110,66 @@ public final class GuildExtras {
                 ItemStack item=p.getMainHandStack();if(item.isEmpty()){tell(p,"Hold an item to set the guild icon. The item will not be consumed.");return 0;}
                 g.icon=Registries.ITEM.getId(item.getItem()).toString();g.addAudit(p.getUuid()+" changed icon to "+g.icon);svc().store.save();tell(p,"Guild icon updated. Item kept.");return 1;
             })));
+        root.then(literal("alliances").executes(c->{
+            var p=c.getSource().getPlayerOrThrow();Guild g=mine(p);if(g==null)return 0;
+            tell(p,"Allied guilds: "+g.allies.size()+"/5");
+            for(String id:g.allies){Guild ally=svc().store.byId(id);
+                if(ally!=null && !ally.closed && ally.allies.contains(g.id))tell(p,ally.name+" ["+ally.tag+"]");}
+            tell(p,"Incoming requests: "+g.incomingAlliances.size());
+            for(String id:g.incomingAlliances){Guild requested=svc().store.byId(id);
+                if(requested!=null && !requested.closed)tell(p,"Pending: "+requested.name);}
+            return 1;
+        }));
+        root.then(literal("ally")
+            .then(literal("request").then(argument("guild",StringArgumentType.greedyString()).executes(c->{
+                var p=c.getSource().getPlayerOrThrow();Guild g=mine(p);if(g==null || !g.isLeader(p.getUuid())){tell(p,"Only a guild leader can request an alliance.");return 0;}
+                Guild other=svc().store.named(StringArgumentType.getString(c,"guild"));
+                if(other==null || other==g || g.allies.size()>=5 || other.allies.size()>=5 || other.allies.contains(g.id)){
+                    tell(p,"Invalid alliance target or alliance limit reached.");return 0;
+                }
+                other.incomingAlliances.add(g.id);
+                other.addAudit("Alliance request from "+g.id);svc().store.save();tell(p,"Alliance request sent to "+other.name);return 1;
+            })))
+            .then(literal("accept").then(argument("guild",StringArgumentType.greedyString()).executes(c->{
+                var p=c.getSource().getPlayerOrThrow();Guild g=mine(p);if(g==null || !g.isLeader(p.getUuid()))return 0;
+                Guild other=svc().store.named(StringArgumentType.getString(c,"guild"));
+                if(other==null || !g.incomingAlliances.contains(other.id) || g.allies.size()>=5 || other.allies.size()>=5){
+                    tell(p,"No valid pending alliance request from that guild.");return 0;
+                }
+                g.incomingAlliances.remove(other.id);g.allies.add(other.id);other.allies.add(g.id);
+                g.addAudit("Alliance with "+other.id);other.addAudit("Alliance with "+g.id);
+                svc().store.save();tell(p,"Alliance formed with "+other.name+". Use /ga <message> to talk.");return 1;
+            })))
+            .then(literal("remove").then(argument("guild",StringArgumentType.greedyString()).executes(c->{
+                var p=c.getSource().getPlayerOrThrow();Guild g=mine(p);if(g==null || !g.isLeader(p.getUuid()))return 0;
+                Guild other=svc().store.named(StringArgumentType.getString(c,"guild"));
+                if(other==null || !g.allies.remove(other.id)){tell(p,"Not an allied guild.");return 0;}
+                other.allies.remove(g.id);g.addAudit("Removed alliance with "+other.id);
+                other.addAudit("Alliance removed by "+g.id);svc().store.save();tell(p,"Alliance removed.");return 1;
+            }))));
+        root.then(literal("achievements").executes(c->{
+            var p=c.getSource().getPlayerOrThrow();Guild g=mine(p);if(g==null)return 0;
+            tell(p,"Guild Achievements: "+g.achievements.size());
+            for(String achievement:g.achievements)tell(p,"★ "+achievement);
+            if(g.achievements.isEmpty())tell(p,"No achievements unlocked yet.");return 1;
+        }));
+        root.then(literal("challenge").executes(c->{
+            var p=c.getSource().getPlayerOrThrow();String week=svc().currentWeek();
+            tell(p,"Weekly Guild Capture Challenge ("+week+"):");
+            var ranking=svc().store.all().stream().filter(g->!g.closed)
+                .sorted((a,b)->Long.compare(b.weeklyCapturePeriod.equals(week)?b.weeklyCaptures:0,a.weeklyCapturePeriod.equals(week)?a.weeklyCaptures:0))
+                .limit(10).toList();
+            int position=1;
+            for(Guild g:ranking)tell(p,(position++)+". "+g.name+" - "+(week.equals(g.weeklyCapturePeriod)?g.weeklyCaptures:0)+" captures");
+            return 1;
+        }));
+        root.then(literal("milestones").executes(c->{
+            var p=c.getSource().getPlayerOrThrow();Guild g=mine(p);if(g==null)return 0;
+            long next=g.totalCaptures<100?100:g.totalCaptures<1000?1000:g.totalCaptures<10000?10000:100000;
+            tell(p,"Lifetime Pokémon Captures: "+g.totalCaptures+" | Next milestone: "+next);
+            tell(p,"Quests completed: "+g.questsCompleted+" | Guild level: "+g.level);
+            return 1;
+        }));
         // Administrative operational tools. Each subcommand verifies its own LuckPerms node.
         root.then(literal("admin").then(literal("restore").then(argument("id",StringArgumentType.word()).executes(c->{
             var p=c.getSource().getPlayerOrThrow();if(!svc().isAdmin(p,"cobbleguilds.admin.manage")){tell(p,"Access denied.");return 0;}

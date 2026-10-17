@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.UUID;
+import kotlin.Unit;
 import net.fabricmc.fabric.api.message.v1.ServerMessageDecoratorEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -46,7 +47,7 @@ public final class CobbleGuilds implements ModInitializer {
             if(service!=null)service.store.save();
         });
         CobblemonEvents.POKEMON_CAPTURED.subscribe(Priority.NORMAL,event->{
-            if(service==null || event.getPlayer()==null)return;
+            if(service==null || event.getPlayer()==null)return Unit.INSTANCE;
             UUID id=event.getPlayer().getUuid();
             // Snapshot values before scheduling to the main thread; never inspect player storage later.
             var pokemon=event.getPokemon();
@@ -59,6 +60,7 @@ public final class CobbleGuilds implements ModInitializer {
                 var player=service.server.getPlayerManager().getPlayer(id);
                 if(player!=null)service.captured(player,species,shiny,firstType,secondType);
             });
+            return Unit.INSTANCE;
         });
     }
 }

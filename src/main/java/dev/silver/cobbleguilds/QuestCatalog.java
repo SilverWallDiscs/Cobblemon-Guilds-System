@@ -14,6 +14,8 @@ public final class QuestCatalog {
         new Definition("Guild Fundraiser", "deposit", 100000, 5000, 3),
         new Definition("Pokémon Marathon", "capture", 150, 10, 7),
         new Definition("Shiny Hunters", "shiny_capture", 3, 1, 10),
+        new Definition("Magikarp Bounty", "species_capture", "magikarp", 20, 2, 5),
+        new Definition("Pikachu Bounty", "species_capture", "pikachu", 10, 1, 5),
         new Definition("Water-type Expedition", "type_capture", "water", 50, 3, 3),
         new Definition("Fire-type Expedition", "type_capture", "fire", 50, 3, 3),
         new Definition("Grass-type Expedition", "type_capture", "grass", 50, 3, 3),
@@ -33,7 +35,7 @@ public final class QuestCatalog {
             configuredDaily=List.copyOf(daily);configuredWeekly=List.copyOf(weekly);
         }
     }
-    public static void refresh(Guild g, String day, String week, long dailyEnd, long weeklyEnd){
+    public static void refresh(Guild g, String day, String week, long dailyEnd, long weeklyEnd,boolean bingoEnabled){
         // One stable random-looking rotation per guild/day; does not change on reboot.
         List<Definition> daily=new ArrayList<>(configuredDaily);
         Collections.shuffle(daily,new Random(Objects.hash(g.id,day)));
@@ -46,6 +48,17 @@ public final class QuestCatalog {
         Collections.shuffle(weekly,new Random(Objects.hash(g.id,week)));
         String id="week-"+week;
         g.quests.computeIfAbsent(id,key->create(id,weekly.get(0),weeklyEnd,g.funds().toString()));
+        if(!bingoEnabled)return;
+        // Nine weekly cooperative Bingo tiles. Their rewards use the existing claim ledger.
+        List<Definition> pool=new ArrayList<>();pool.addAll(configuredDaily);pool.addAll(configuredWeekly);
+        Collections.shuffle(pool,new Random(Objects.hash(g.id,week,"bingo")));
+        for(int i=0;i<9;i++){
+            Definition d=pool.get(i % pool.size());String bingoId="bingo-"+week+"-"+i;
+            g.quests.computeIfAbsent(bingoId,key->{
+                Guild.Quest q=create(bingoId,d,weeklyEnd,g.funds().toString());
+                q.name="Bingo: "+d.name();q.candies=Math.min(3,d.candies());return q;
+            });
+        }
     }
     private static Guild.Quest create(String id,Definition d,long end,String bankBaseline){
         Guild.Quest q=new Guild.Quest(id,d.name(),d.target(),d.minimum(),d.candies(),end);

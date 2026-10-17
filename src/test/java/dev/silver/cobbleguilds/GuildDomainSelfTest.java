@@ -36,10 +36,12 @@ public final class GuildDomainSelfTest {
         check(!guild.canManageRank(leader,"leader"),"leader rank must not be editable");
         check(guild.validDefaultRank(),"exactly one non-leader default rank");
         Guild r=Guild.fresh(UUID.randomUUID(),"Quest Team","QT","§a",true,"");
-        QuestCatalog.refresh(r,"2026-10-17","2026-W42",System.currentTimeMillis()+86400000L,System.currentTimeMillis()+604800000L);
+        QuestCatalog.refresh(r,"2026-10-17","2026-W42",System.currentTimeMillis()+86400000L,System.currentTimeMillis()+604800000L,false);
         check(r.quests.size()==3,"two daily quests and one weekly");
-        QuestCatalog.refresh(r,"2026-10-17","2026-W42",System.currentTimeMillis()+86400000L,System.currentTimeMillis()+604800000L);
+        QuestCatalog.refresh(r,"2026-10-17","2026-W42",System.currentTimeMillis()+86400000L,System.currentTimeMillis()+604800000L,false);
         check(r.quests.size()==3,"daily reload does not duplicate quests");
+        QuestCatalog.refresh(r,"2026-10-17","2026-W42",System.currentTimeMillis()+86400000L,System.currentTimeMillis()+604800000L,true);
+        check(r.quests.size()==12,"nine weekly Bingo tiles are separate from normal quests");
         check(r.quests.values().stream().anyMatch(q->q.kind.equals("capture")||q.kind.equals("deposit")),"quest rotation only advertises wired objectives");
         guild.closed=true;
         check(!guild.contains(leader),"closed guild no longer accessible");

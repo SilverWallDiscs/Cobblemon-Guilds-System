@@ -24,8 +24,14 @@ Source-of-truth requirements: `Instrucciones.txt` (included in this package).
 - [x] Signed chat decoration using Fabric message decorator (runtime compatibility requires testing).
 - [x] Guild leadership transfer with expiring explicit confirmation command.
 - [x] GitHub Actions build workflow for reproducible remote verification.
-- [ ] Bingo, inter-guild challenges, bounties, alliances, broader upgrades and achievements.
+- [x] Reciprocal guild alliances, shared `/ga` chat, weekly capture challenge leaderboard, bounties and milestone achievements (source only).
+- [x] Weekly 3×3 cooperative Bingo GUI and repeat-safe line XP rewards (source only).
+- [ ] Challenge rewards, seasonal prize resets, broader upgrades and achievement rewards.
 - [ ] Thorough anti-dupe tests (inventory close, forced kill, concurrent sessions, player logout).
 - [ ] Long-term treasury reconciliation and world restore procedures.
 - [x] GitHub source repository and Java 21 CI workflow.
 - [ ] Verified Fabric CI build and runtime integration tests.
+
+- [x] Staff `/guild admin edit <tag>` controls for guild name, tag, color, description, privacy, icon, chest capacity, fee waiver and non-leader ranks (source only).
+- [x] Member GUI with current online usernames, roles and displayed online CobbleDollars balances.
+- [ ] Validate Gradle build and Minecraft integration, including Cobblemon capture events and signed chat.

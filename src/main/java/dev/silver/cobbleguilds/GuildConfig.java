@@ -13,6 +13,8 @@ public final class GuildConfig {
     public String timeZone = "system";
     public int maxGuildMembers = 10;
     public boolean questsEnabled = true;
+    public boolean bingoEnabled = true;
+    public int bingoLineExperience = 150;
     public boolean chatSpyEnabled = true;
     public boolean noHud = true;
     public boolean guildHomesEnabled = true;

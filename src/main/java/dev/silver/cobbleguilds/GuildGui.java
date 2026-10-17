@@ -108,6 +108,13 @@ public final class GuildGui {
             else GuildService.tell(pl,"Use a guild member with the upgrade permission; admin upgrades are planned.");
             guild(pl,svc,g,admin);
         });
+        menu.slot(28,item(Items.COMPASS,"§bGuild Home","§7/guild home","§7/guild sethome"),(pl,c)->GuildService.tell(pl,"Use /guild home or /guild sethome."));
+        menu.slot(29,item(Items.WRITABLE_BOOK,"§eAnnouncement","§7/guild announcement","§7/guild announcement set <text>"),(pl,c)->GuildService.tell(pl,"Guild announcement: "+g.announcement));
+        menu.slot(30,item(Items.EMERALD,"§aGuild Alliances","§7/guild alliances","§7/guild ally request <guild>","§7/ga <message>"),(pl,c)->GuildService.tell(pl,"Use /guild alliances to view your alliances."));
+        menu.slot(31,item(Items.MAP,"§dWeekly Guild Bingo","§7Cooperative 3x3 board","§7/guild bingo"),(pl,c)->bingo(pl,svc,g,admin));
+        menu.slot(32,item(Items.GOLDEN_APPLE,"§6Guild Achievements","§7Unlocked: "+g.achievements.size(),"§7/guild achievements"),(pl,c)->GuildService.tell(pl,"Use /guild achievements."));
+        menu.slot(33,item(Items.IRON_SWORD,"§bWeekly Guild Challenge","§7/guild challenge","§7This week: "+g.weeklyCaptures+" captures"),(pl,c)->GuildService.tell(pl,"Use /guild challenge to view the weekly standings."));
+        menu.slot(34,item(Items.ENDER_EYE,"§dMilestones","§7Lifetime captures: "+g.totalCaptures,"§7/guild milestones"),(pl,c)->GuildService.tell(pl,"Use /guild milestones."));
         menu.slot(40,item(Items.PAPER,"§eGuild Help","§7/guild invite <player>","§7/g <message>","§7/guild bank balance"),(pl,c)->GuildService.tell(pl,"Commands: /g, /guild bank, /guild quest, /guild effects"));
         if(admin)menu.slot(49,item(Items.BARRIER,"§cADMIN MODE","§7Viewing without joining"),(pl,c)->browse(pl,svc,0,true));
         menu.open(p,g.color+g.name+" ["+g.tag+"]");
@@ -152,7 +159,7 @@ public final class GuildGui {
         menu.open(p,"Guild Colors");
     }
     private static void bank(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
-        if(!svc.authorized(p,g,"chest",admin) && !g.contains(p.getUuid())){
+        if(!g.contains(p.getUuid()) && !(admin && (svc.isAdmin(p,"cobbleguilds.admin.bank") || svc.isAdmin(p,"cobbleguilds.admin.manage")))){
             GuildService.tell(p,"You cannot access this guild bank.");return;
         }
         Menu menu=new Menu(4);
@@ -172,12 +179,37 @@ public final class GuildGui {
         menu.slot(31,item(Items.ARROW,"§7Back"),(pl,c)->guild(pl,svc,g,admin));
         menu.open(p,"Guild Bank");
     }
+    public static void bingo(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
+        if(g==null || (!admin && !g.contains(p.getUuid()))){GuildService.tell(p,"Not a guild member.");return;}
+        if(admin && !svc.isAdmin(p,"cobbleguilds.admin.gui"))return;
+        if(!svc.config.bingoEnabled || !svc.config.questsEnabled){GuildService.tell(p,"Guild Bingo is disabled.");return;}
+        svc.ensureQuests(g);
+        String key="bingo-"+svc.currentWeek()+"-";
+        Menu menu=new Menu(6);
+        int[] positions={20,21,22,29,30,31,38,39,40};
+        for(int i=0;i<9;i++){
+            Guild.Quest q=g.quests.get(key+i);if(q==null)continue;
+            menu.slot(positions[i],item(q.completed?Items.EMERALD:Items.PAPER,
+                "§d"+q.name,"§7Progress: "+q.progress()+"/"+q.target,
+                "§7Your Contribution: "+q.amount(p.getUuid())+"/"+q.minimum,
+                "§7Reward: "+q.candies+" Rare Candies",
+                "§7Status: "+(q.completed?"Completed":"In Progress")),
+                (pl,c)->GuildService.tell(pl,q.name+" - "+q.progress()+"/"+q.target));
+        }
+        menu.slot(4,item(Items.MAP,"§dGuild Bingo","§7Complete 3 tiles in a line","§7Each completed line awards "+svc.config.bingoLineExperience+" Guild XP"),(pl,c)->{});
+        if(!admin)menu.slot(49,item(Items.CHEST,"§aClaim Pending Rewards","§7Applies to all eligible guild quests"),(pl,c)->{svc.claim(pl);bingo(pl,svc,g,admin);});
+        menu.slot(53,item(Items.ARROW,"§7Back"),(pl,c)->guild(pl,svc,g,admin));
+        menu.open(p,"Guild Bingo · "+svc.currentWeek());
+    }
     private static void members(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
         Menu menu=new Menu(6);int i=0;
         for(var entry:g.members.entrySet()){
             if(i>=45)break;
             String role=entry.getValue();String id=entry.getKey();
-            menu.slot(i++,item(Items.PLAYER_HEAD,"§b"+id,"§7Rank: "+role,"§7Use /guild role assign <player> <rank>"),(pl,c)->GuildService.tell(pl,"Member UUID: "+id+" | Rank: "+role));
+            ServerPlayerEntity online=svc.server.getPlayerManager().getPlayer(UUID.fromString(id));
+            String display=online==null?id:online.getName().getString();
+            String currency=online==null?"§7CobbleDollars: Offline": "§6CobbleDollars: $"+svc.money.balance(online);
+            menu.slot(i++,item(Items.PLAYER_HEAD,"§b"+display,"§7Rank: "+role,currency,"§7UUID: "+id),(pl,c)->GuildService.tell(pl,"Member: "+display+" | Rank: "+role));
         }
         menu.slot(49,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));menu.open(p,"Guild Members");
     }
@@ -200,7 +232,7 @@ public final class GuildGui {
             if(!q.completed&&q.expiresAt<System.currentTimeMillis())continue;
             menu.slot(i++,item(q.completed?Items.EMERALD:Items.BOOK,"§b"+q.name,"§7Progress: "+q.progress()+"/"+q.target,"§7Your Contribution: "+q.amount(p.getUuid())+"/"+q.minimum,"§7Reward: "+q.candies+" Rare Candies","§7Status: "+(q.completed?"Completed":"In Progress")),(pl,c)->svc.listQuests(pl));
         }
-        menu.slot(49,item(Items.CHEST,"§aClaim Rewards"),(pl,c)->{svc.claim(pl);quests(pl,svc,g,admin);});
+        if(!admin)menu.slot(49,item(Items.CHEST,"§aClaim Rewards"),(pl,c)->{svc.claim(pl);quests(pl,svc,g,admin);});
         menu.slot(53,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));menu.open(p,"Guild Quests");
     }
     @FunctionalInterface public interface Click { void run(ServerPlayerEntity p,ItemStack cursor); }
