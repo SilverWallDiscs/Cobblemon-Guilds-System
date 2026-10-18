@@ -37,49 +37,6 @@ public final class GuildBuffs {
         "alpha_spawn_x2", "Alpha is not a standard Cobblemon 1.7 spawn attribute"
     );
     private static final long MAX_DURATION_MILLIS = 30L * 24L * 60L * 60L * 1000L;
-    /** Administrator-only, per-guild experimental effects. Not purchasable and never permanent. */
-    public static final double TEST_MULTIPLIER = 1_000_000.0;
-    public static final int TEST_MINUTES = 10;
-    public static String testId(Kind kind){return "debug_x1000000_"+kind.name().toLowerCase(Locale.ROOT);}
-    public static boolean testActive(Guild g,Kind kind,long now){
-        return g!=null && !g.closed && g.effects!=null && active(g.effects.get(testId(kind)),now);
-    }
-    /** Same saved guild effects and existing Cobblemon event handlers, no currency debited. */
-    public static boolean toggleTest(GuildService svc,ServerPlayerEntity admin,Guild g,Kind kind){
-        if(!svc.isAdmin(admin,"cobbleguilds.admin.manage")){GuildService.tell(admin,"Admin permission required.");return false;}
-        if(g==null || g.closed || svc.store.byId(g.id)!=g){GuildService.tell(admin,"Choose an active guild first.");return false;}
-        long now=System.currentTimeMillis();String id=testId(kind);
-        boolean wasOn=testActive(g,kind,now);
-        Guild.Effect prior=g.effects.get(id);
-        if(wasOn)g.effects.remove(id);
-        else g.effects.put(id,new Guild.Effect(id,now+TEST_MINUTES*60_000L,false));
-        try{
-            g.addAudit(admin.getName().getString()+" "+(wasOn?"disabled":"enabled")+" TEST x1000000 "+kind);
-            svc.store.save();
-        }catch(RuntimeException ex){
-            if(prior==null)g.effects.remove(id);else g.effects.put(id,prior);
-            CobbleGuilds.LOG.error("Unable to change test buff for guild {}",g.id,ex);
-            GuildService.tell(admin,"Failed to save test buff toggle.");return false;
-        }
-        GuildService.tell(admin,"TEST "+kind+" x1000000 "+(wasOn?"disabled":"enabled for "+TEST_MINUTES+" minutes")+" on "+g.name+". No money charged.");
-        return true;
-    }
-    public static void clearTests(GuildService svc,ServerPlayerEntity admin,Guild g){
-        if(!svc.isAdmin(admin,"cobbleguilds.admin.manage")||g==null||g.closed||svc.store.byId(g.id)!=g)return;
-        Map<String,Guild.Effect> removed=new LinkedHashMap<>();
-        for(Kind kind:Kind.values()){
-            String id=testId(kind);
-            if(g.effects.containsKey(id))removed.put(id,g.effects.remove(id));
-        }
-        if(removed.isEmpty())return;
-        try{
-            g.addAudit(admin.getName().getString()+" disabled all TEST x1000000 buffs");svc.store.save();
-        }catch(RuntimeException ex){
-            g.effects.putAll(removed);CobbleGuilds.LOG.error("Unable to clear test buffs",ex);
-            GuildService.tell(admin,"Failed to save test buff reset.");return;
-        }
-        GuildService.tell(admin,"All test buffs disabled for "+g.name+". Purchased buffs were not changed.");
-    }
     public static Offer byId(String id){return OFFERS.stream().filter(o->o.id().equalsIgnoreCase(id)).findFirst().orElse(null);}
     public static boolean enabled(GuildConfig config,Offer offer){return config.buffPurchasesEnabled && !config.disabledBuffs.contains(offer.id());}
     public static String price(GuildConfig config,Offer offer){return config.buffPrices.getOrDefault(offer.id(),offer.price());}
@@ -91,10 +48,7 @@ public final class GuildBuffs {
         for(Offer offer:OFFERS){
             if(offer.kind()==kind && active(g.effects.get(offer.id()),now))best=Math.max(best,offer.multiplier());
         }
-        // Experimental effect overrides a tier only while its timer is active.
-        // It is deliberately not in OFFERS, so nobody can buy it or configure a price.
-        if(testActive(g,kind,now))best=Math.max(best,TEST_MULTIPLIER);
-        return best; // Same-kind tiers (including debug) never multiply one another.
+        return best; // Same-kind buff tiers never multiply one another.
     }
     public static double multiplier(GuildService svc,ServerPlayerEntity player,Kind kind){
         return player==null?1.0:multiplier(svc.store.member(player.getUuid()),kind,System.currentTimeMillis());
@@ -166,9 +120,6 @@ public final class GuildBuffs {
         for(Offer o:OFFERS){Guild.Effect fx=g.effects.get(o.id());if(active(fx,now)){
             GuildService.tell(player,o.label()+" - "+durationText(fx,now));count++;
         }}
-        for(Kind kind:Kind.values())if(testActive(g,kind,now)){
-            GuildService.tell(player,"§cTEST x1000000 "+kind+" - "+durationText(g.effects.get(testId(kind)),now));count++;
-        }
         GuildService.tell(player,"Effective catch bonus: x"+multiplier(g,Kind.CATCH,now)+" to the target's base catch rate. Poké Ball item tooltip multipliers remain unchanged.");
         if(count==0)GuildService.tell(player,"None. Use /guild buffs to see available boosts.");
     }

@@ -1,10 +1,10 @@
 # Cobblemon Guilds System
 
-**Version:** `0.4.5-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
+**Version:** `0.4.6` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
 
-This alpha targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is installed **only on the dedicated server** (`fabric.mod.json` uses `"environment": "server"`). Players need only the normal client mods required by the server. It does not register client entrypoints, add HUDs, use bossbars, scoreboards or sidebars.
+This version targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is installed **only on the dedicated server** (`fabric.mod.json` uses `"environment": "server"`). Players need only the normal client mods required by the server. It does not register client entrypoints, add HUDs, use bossbars, scoreboards or sidebars.
 
-> **ALPHA WARNING:** Automated compilation is not the same as gameplay testing. Back up your world, guild data, CobbleDollars balances and inventories. Test economy transactions and storage with disposable accounts before production deployment.
+> **Backup recommendation:** Automated compilation is not the same as gameplay testing. Back up your world, guild data, CobbleDollars balances and inventories. Test economy transactions and storage with disposable accounts before production deployment.
 
 ## Menu-first gameplay
 
@@ -16,7 +16,7 @@ This alpha targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is inst
 - Staff use `/guild admin` to browse every guild with the guild's name and leader, inspect their data, and manage authorized settings **without joining the guild**.
 - `/guild home` actually teleports to the guild home; GUI Home offers teleport and setting the location. `/guild announcement` remains an optional shortcut, with announcement editing available in the menu.
 - Real player head icons use online `GameProfile` skin data, with saved names for offline members. Names are cached when members are online; previously offline players may show as Unknown Player until they next join.
-- The server-only PlayerManager mixin prefixes the **chat display name**, not the message text: `[GUILD] Username: Hello`. Its interaction with other chat/rank mods needs integration testing.
+- Guild tags are shown only in `/g` and `/ga`, not in global chat. ChatSpy can observe guild and alliance messages with administrator permission.
 
 **No sidebar, bossbar, scoreboard, client UI mod, custom packet or HUD is required.** The only player-facing interfaces are vanilla chests and temporary chat prompts; `/guild effects` remains available.
 
@@ -51,7 +51,7 @@ Admin menu: `/guild admin`. Chat monitoring: `/guild chatspy` (OP 4 or correspon
 - Guild economy transactions and shared chests need crash/dupe tests before production use.
 - Chat name mixin integration with rank providers and other chat decorators.
 - Captures outside vanilla spawn pipeline, optional addons, and special Alpha/hidden-ability mechanics.
-- Menus are server-side chests, not a graphical custom client screen. Offline skins may require a real profile texture cache; this alpha uses known/online profiles.
+- Menus are server-side chests, not a graphical custom client screen. Offline skins may require a real profile texture cache; this release uses known/online profiles.
 - Archived guilds can never be restored. See `docs/ADMIN_CONFIG_ARCHIVES.md` for archive-only administration, NBT-backed custom modded item quest rewards, menu-based configuration and permanent deletion safeguards.
 
 ## 0.4.1-alpha: Admin Configuration and Permanent Archives
@@ -89,11 +89,8 @@ Admin menu: `/guild admin`. Chat monitoring: `/guild chatspy` (OP 4 or correspon
 - This update changes no capture/shiny/rare multipliers or purchase pricing. **No client installation, HUD, sidebar or scoreboard** was added.
 - See `docs/STRESS_TEST_CHECKLIST.md` for current high-risk unverified paths.
 
+## 0.4.6 — Release without experimental buffs
 
-## 0.4.5-alpha — Admin-only temporary x1,000,000 test multipliers
-
-Open an **active guild**'s **Guild Buffs** menu while holding `cobbleguilds.admin.manage` (op/LuckPerms). Click **Test Buffs x1,000,000** and toggle SHINY, RARE, CATCH, EXPERIENCE, EV or FRIENDSHIP independently. Re-click to disable. Each experimental effect expires in **10 minutes**; **Disable ALL** removes only experimental effects. The button is not shown to regular members. This feature requires no client mod.
-
-**Crucial:** This is for private test environments only, not production. It uses the exact same Cobblemon event handlers as normal guild buffs and is a temporary highest-tier effect: it does not stack with normal buffs, cost guild funds, overwrite purchased buff timers or create ordinary shop offers. The test timer persists across restarts and still expires at its original time. Purchased effects return to normal when a test ends. Effects apply to the chosen guild's members, not globally.
-
-SHINY x1,000,000 makes successful **eligible** spawn-event shiny bonus rolls practically certain, but original nearest-player-within-48-blocks attribution still applies. RARE x1,000,000 strongly favors the existing `rare`/`ultra-rare` buckets *when the player-caused spawner offers them*; it does not generate missing spawn entries, guarantee a particular rare species or affect third-party spawn pipelines. CATCH x1,000,000 clamps the base catch rate to 255; actual final catch outcome can still vary with other factors. EXP/EV x1,000,000 can cause extremely large gains; use disposable Pokémon and a backed-up test world.
+- Removed the administrator-only x1,000,000 multiplier controls, test-buff handlers and their GUI entries. Only the regular, configurable and paid guild buffs remain.
+- Existing guild data from 0.4.5 is supported. On startup, saved experimental effect keys are removed from active and archived guilds automatically; purchased buffs, expiry times, bank balances, quests and inventory files remain unchanged.
+- Removed the `-alpha` suffix from the project version and output JAR name. This is a release-label change, not a guarantee of compatibility with every third-party addon.

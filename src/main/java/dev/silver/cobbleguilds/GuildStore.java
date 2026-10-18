@@ -26,7 +26,13 @@ public final class GuildStore {
             for(Guild g:archives.values())g.closed=true;
             for(Guild g:guilds.values())if(g.memberNames==null)g.memberNames=new LinkedHashMap<>();
             for(Guild g:archives.values())if(g.memberNames==null)g.memberNames=new LinkedHashMap<>();
-            if(migrate){saveArchives();saveActive();}
+            // Remove experimental x1M effects left by 0.4.5. Purchased effects,
+            // player membership, quests, banks and chest data are untouched.
+            boolean changedArchives=migrate, changedActive=migrate;
+            for(Guild g:guilds.values())if(g.effects!=null && g.effects.keySet().removeIf(k->k!=null && k.startsWith("debug_x1000000_")))changedActive=true;
+            for(Guild g:archives.values())if(g.effects!=null && g.effects.keySet().removeIf(k->k!=null && k.startsWith("debug_x1000000_")))changedArchives=true;
+            if(changedArchives)saveArchives();
+            if(changedActive)saveActive();
         } catch(Exception e){throw new IllegalStateException("Unable to load guild data - refusing to start to prevent data loss",e);}
     }
     private void read(Path file,Map<String,Guild> target) throws java.io.IOException {
