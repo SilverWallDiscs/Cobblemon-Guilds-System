@@ -16,7 +16,7 @@ Run `/guild config` as OP 4 or with `cobbleguilds.admin.config` (or umbrella `co
 - Daily and Weekly Quest Templates: add/remove template, edit name, objective, type/species qualifier, goal, minimum participation, daily/weekly rotation, enabled status, item + amount.
 - To set a quest reward, **hold any item, including a modded item, then click `Reward`**. A snapshot of its entire ItemStack, including data components, is stored in `config/cobbleguilds-quests.json` as compressed-base64 NBT. The actual item remains in the admin inventory. The reward is a copy, not the original item.
 - Bingo Settings: enable/disable, XP per completed row, reward item and quantity. Bingo template choices are pulled from quest pool and its reward overrides are saved in `config/cobbleguilds.json`.
-- Buff Settings: enable/disable the whole shop or individual working buffs, edit bank prices. These persist in `config/cobbleguilds.json`. Unsupported Alpha and Hidden Ability boosts cannot be activated until their real Cobblemon integration exists.
+- Buff Settings: enable/disable the whole shop or individual working buffs, edit bank prices. These persist in `config/cobbleguilds.json`. The shop lists only implemented buffs.
 - Change number of daily (1–5) and weekly (1–3) quests, daily fee and creation price.
 - Separate **Reload Server Config** and **Reload Quest Templates** buttons validate their respective files before applying them. No guild chest/bank/quest progress resets occur. **Changes to quest rewards apply to newly rotated quests only**, not claims already earned.
 
