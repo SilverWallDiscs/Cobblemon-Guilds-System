@@ -19,7 +19,7 @@ Install CobbleGuilds only in the server's `mods` folder. Use Minecraft 1.21.1, J
 9. Disconnect guild members, restart, and verify buffs and expiry remain intact; fees and banks must remain consistent.
 10. Ensure no scoreboard, sidebar, actionbar, custom packet, or client installation is required.
 
-Rare-spawn weighting, hidden-ability chance and Alpha spawn bonuses remain unsupported and must never take funds.
+Rare spawn weighting is implemented for player-caused bucket selection; test custom spawners independently.
 
 ## Release gate
 
