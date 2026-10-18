@@ -25,7 +25,7 @@ public final class GuildBuffs {
         new Offer("shiny_x3","Shiny Luck x3","3000000",60,3.0,Kind.SHINY),
         new Offer("rare_spawn_x2","Rare Spawn Bucket Boost x2","1500000",60,2.0,Kind.RARE),
         new Offer("catch_x15","Catch Rate x1.5 (Permanent)","500000",0,1.5,Kind.CATCH),
-        new Offer("catch_x2","Catch Rate x2","3000000",60,2.0,Kind.CATCH),
+        new Offer("catch_x2","Catch Rate x2","10000000",30,2.0,Kind.CATCH),
         new Offer("exp_x2","Pokémon EXP x2","750000",60,2.0,Kind.EXPERIENCE),
         new Offer("ev_x2","EV Training x2","800000",60,2.0,Kind.EV),
         new Offer("friendship_x2","Friendship Gain x2","400000",60,2.0,Kind.FRIENDSHIP)
@@ -48,7 +48,7 @@ public final class GuildBuffs {
         for(Offer offer:OFFERS){
             if(offer.kind()==kind && active(g.effects.get(offer.id()),now))best=Math.max(best,offer.multiplier());
         }
-        return best; // Same-kind tiers don't multiply one another.
+        return best; // Same-kind tiers don't multiply one another; catch 1.5x and 2x never add.
     }
     public static double multiplier(GuildService svc,ServerPlayerEntity player,Kind kind){
         return player==null?1.0:multiplier(svc.store.member(player.getUuid()),kind,System.currentTimeMillis());
@@ -120,6 +120,7 @@ public final class GuildBuffs {
         for(Offer o:OFFERS){Guild.Effect fx=g.effects.get(o.id());if(active(fx,now)){
             GuildService.tell(player,o.label()+" - "+durationText(fx,now));count++;
         }}
+        GuildService.tell(player,"Effective catch bonus: x"+multiplier(g,Kind.CATCH,now)+" to the target's base catch rate. Poké Ball item tooltip multipliers remain unchanged.");
         if(count==0)GuildService.tell(player,"None. Use /guild buffs to see available boosts.");
     }
     public static void subscribe(GuildService svc){
@@ -163,6 +164,9 @@ public final class GuildBuffs {
             }
             return Unit.INSTANCE;
         });
+        // This event changes a wild Pokemon's species catch rate during the real
+        // Cobblemon capture calculation. It does NOT change the Poké Ball's own
+        // multiplier displayed in client tooltips (1.0x/5.0x for ball type).
         CobblemonEvents.POKEMON_CATCH_RATE.subscribe(Priority.NORMAL,event->{
             if(event.getThrower() instanceof ServerPlayerEntity p){
                 double factor=multiplier(svc,p,Kind.CATCH);

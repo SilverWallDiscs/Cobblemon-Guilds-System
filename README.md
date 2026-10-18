@@ -1,6 +1,6 @@
 # Cobblemon Guilds System
 
-**Version:** `0.4.1-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
+**Version:** `0.4.3-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
 
 This alpha targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is installed **only on the dedicated server** (`fabric.mod.json` uses `"environment": "server"`). Players need only the normal client mods required by the server. It does not register client entrypoints, add HUDs, use bossbars, scoreboards or sidebars.
 
@@ -73,3 +73,10 @@ Admin menu: `/guild admin`. Chat monitoring: `/guild chatspy` (OP 4 or correspon
 - The persisted stack snapshot remains the authoritative modded item, with all components/NBT, and the configured reward count is enforced when decoding.
 
 **Upgrade note:** Back up your world before replacing the JAR. `/guilds` remains the primary player UI; no client installation or HUD is required. Runtime-in-game compatibility is still awaiting multiplayer tests.
+
+## 0.4.3-alpha — Quest/Bounty/Bingo details and catch-rate pricing
+
+- **Quest and Bounty listings** show paper items; the **nine Bingo tiles** show vanilla map items. Click a paper/map for a full chest detail screen with objective, shared progress, your contribution/minimum, expiry, a preview of the actual configured modded reward item and a claim button where eligible. Back remains in the bottom center.
+- Catch Rate x1.5 stays permanent (default $500,000); Catch Rate x2 costs **10,000,000 CobbleDollars for 30 minutes** by default. Server admins' explicit `buffPrices.catch_x2` overrides are preserved; to use the default remove that key in `config/cobbleguilds.json` or edit it in `/guild config` → Buffs. Existing purchased timed buffs retain their original expiry; no retroactive extension or reduction.
+- Catch buffs use Cobblemon's `POKEMON_CATCH_RATE` event and modify the target species' catch rate *during the capture calculation*. The **1.0x number on a Poké Ball is that BALL'S modifier**, not the guild bonus. It is normal for that tooltip to stay 1.0x. A Quick Ball has its own situational ball multiplier; the effects multiply the base catch rate, not add 1.5 or 2 to a ball's display. **The stronger catch buff takes precedence; x1.5 and x2 do not add or multiply together.** Pokémon species with already high catch rates can hit the game's 255 rate cap, making the difference smaller or zero. Verify with a lower-catch-rate species and enough throws; a small number of throws cannot reliably demonstrate the probability.
+- Dedicated-server-only, no HUD, sidebar, bossbar or permanent on-screen messaging. Runtime behavior still needs in-game validation.

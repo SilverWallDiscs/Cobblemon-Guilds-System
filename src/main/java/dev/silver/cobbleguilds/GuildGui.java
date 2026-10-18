@@ -347,6 +347,10 @@ public final class GuildGui {
                 confirm(pl,"Buy "+offer.label()+" for $"+GuildBuffs.price(svc.config,offer)+"?",()->{GuildBuffs.buy(svc,pl,offer.id());buffs(pl,svc,g,false);},()->buffs(pl,svc,g,false));
             });
         }
+        m.slot(39,item(Items.SLIME_BALL,"§eHow Catch Rate Buffs Work",
+            "§7The Poké Ball's own 1.0x / 5.0x stays unchanged.",
+            "§7Catch buffs multiply the target's base catch rate.",
+            "§7Only the strongest active catch buff applies."),(pl,c)->{});
         int slot=18;
         for(var unsupported:GuildBuffs.UNSUPPORTED.entrySet())m.slot(slot++,item(Items.BARRIER,"§8"+unsupported.getKey(),"§7Unavailable: "+unsupported.getValue()),(pl,c)->{});
         m.slot(47,item(Items.CLOCK,"§aActive Effects","§7Click to view timers"),(pl,c)->effects(pl,svc,g,admin));
@@ -357,6 +361,10 @@ public final class GuildGui {
         for(GuildBuffs.Offer o:GuildBuffs.OFFERS){Guild.Effect fx=g.effects.get(o.id());if(!GuildBuffs.active(fx,now))continue;
             m.slot(i++,item(Items.ENCHANTED_BOOK,"§d"+o.label(),"§7Remaining: "+GuildBuffs.durationText(fx,now)),(pl,c)->{});
         }
+        m.slot(39,item(Items.SLIME_BALL,"§bEffective Guild Catch Rate",
+            "§7Guild bonus: x"+GuildBuffs.multiplier(g,GuildBuffs.Kind.CATCH,now),
+            "§7Poké Ball item multiplier stays independent.",
+            "§7Only the highest active capture tier applies."),(pl,c)->{});
         m.slot(49,item(Items.ARROW,"Back"),(pl,c)->buffs(pl,svc,g,admin));m.open(p,"Active Guild Effects");
     }
     private static void upgrades(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
@@ -557,7 +565,7 @@ public final class GuildGui {
         svc.ensureQuests(g);Menu m=new Menu(6);int[] places={20,21,22,29,30,31,38,39,40};String key="bingo-"+svc.currentWeek()+"-";
         for(int i=0;i<9;i++){
             Guild.Quest q=g.quests.get(key+i);if(q==null)continue;
-            m.slot(places[i],questItem(p,q),(pl,c)->questDetail(pl,svc,g,admin,q,()->bingo(pl,svc,g,admin)));
+            m.slot(places[i],questItem(p,q,true),(pl,c)->questDetail(pl,svc,g,admin,q,()->bingo(pl,svc,g,admin)));
         }
         m.slot(4,item(Items.MAP,"§dWeekly Guild Bingo","§7Complete lines of three","§7Bonus XP per line: "+Math.min(150,svc.config.bingoLineExperience)),(pl,c)->{});
         if(!admin)m.slot(47,item(Items.CHEST,"§aClaim Rewards"),(pl,c)->{svc.claim(pl);bingo(pl,svc,g,admin);});
@@ -572,30 +580,38 @@ public final class GuildGui {
         case "species_capture" -> "Catch "+q.target+" "+q.qualifier;
         default -> "Complete "+q.target+" "+q.kind.replace('_',' ') +" actions";
     };}
-    private static ItemStack questItem(ServerPlayerEntity p,Guild.Quest q){
+    /** Quest and bounty entries are paper; Bingo tiles are actual vanilla maps. */
+    private static ItemStack questItem(ServerPlayerEntity p,Guild.Quest q,boolean bingoTile){
+        long now=System.currentTimeMillis();
         int count=q.rewardCount>0?q.rewardCount:Math.max(1,q.candies);
-        ItemStack reward;
-        String label;
+        String rewardLabel=GuildRewardCodec.displayName(p.getServer().getRegistryManager(),q.rewardItemId,q.rewardItemData,count);
+        return item(bingoTile?Items.MAP:Items.PAPER,
+            (q.completed?"§a":q.expiresAt<=now?"§c":"§e")+q.name,
+            "§7Objective: "+questGoal(q),
+            "§7Guild progress: "+q.progress()+"/"+q.target,
+            "§7Your contribution: "+q.amount(p.getUuid())+"/"+q.minimum,
+            "§7Reward: "+count+"x "+rewardLabel,
+            "§7Status: "+(q.completed?"Completed":q.expiresAt<=now?"Expired":"Active"),
+            "§eClick to view objectives, rewards and progress");
+    }
+    private static ItemStack questRewardPreview(ServerPlayerEntity p,Guild.Quest q){
+        int count=q.rewardCount>0?q.rewardCount:Math.max(1,q.candies);
         try {
-            reward=GuildRewardCodec.decode(p.getServer().getRegistryManager(),q.rewardItemData,q.rewardItemId,count);
-            label=GuildRewardCodec.displayName(reward,q.rewardItemId);
-        }catch(Exception e){reward=new ItemStack(Items.BARRIER);label="Reward item unavailable";}
-        // Show the actual reward item as the quest icon, while describing the objective in its lore.
-        reward.setCount(1);
-        reward.set(DataComponentTypes.CUSTOM_NAME,Text.literal("§d"+q.name));
-        reward.set(DataComponentTypes.LORE,new LoreComponent(List.of(
-            Text.literal("§7Objective: "+questGoal(q)),Text.literal("§7Guild progress: "+q.progress()+"/"+q.target),
-            Text.literal("§7Your contribution: "+q.amount(p.getUuid())+"/"+q.minimum),
-            Text.literal("§7Reward: "+count+"x "+label),
-            Text.literal("§7Status: "+(q.completed?"Completed":q.expiresAt<System.currentTimeMillis()?"Expired":"Active")),
-            Text.literal("§eClick for details"))));
-        return reward;
+            // Show the ORIGINAL item with its components and name intact, not a disguised paper.
+            return GuildRewardCodec.decode(p.getServer().getRegistryManager(),q.rewardItemData,q.rewardItemId,count);
+        } catch(RuntimeException ex){
+            return item(Items.BARRIER,"§cReward unavailable","§7A configured mod item is missing or invalid.","§7Ask an administrator to check quest rewards.");
+        }
+    }
+    private static String questTimeLeft(Guild.Quest q){
+        long seconds=Math.max(0,(q.expiresAt-System.currentTimeMillis()+999)/1000);
+        return String.format(Locale.ROOT,"%dh %02dm %02ds",seconds/3600,seconds/60%60,seconds%60);
     }
     private static void quests(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin,int page){
         svc.ensureQuests(g);List<Guild.Quest> list=g.quests.values().stream().filter(q->!q.id.startsWith("bingo-") && (q.completed||q.expiresAt>System.currentTimeMillis())).toList();
         Menu m=new Menu(6);int from=page*45;
         for(int i=from;i<Math.min(list.size(),from+45);i++){
-            Guild.Quest q=list.get(i);m.slot(i-from,questItem(p,q),(pl,c)->questDetail(pl,svc,g,admin,q,()->quests(pl,svc,g,admin,page)));
+            Guild.Quest q=list.get(i);m.slot(i-from,questItem(p,q,false),(pl,c)->questDetail(pl,svc,g,admin,q,()->quests(pl,svc,g,admin,page)));
         }
         if(page>0)m.slot(45,item(Items.ARROW,"Previous"),(pl,c)->quests(pl,svc,g,admin,page-1));
         if(from+45<list.size())m.slot(53,item(Items.ARROW,"Next"),(pl,c)->quests(pl,svc,g,admin,page+1));
@@ -603,12 +619,44 @@ public final class GuildGui {
         m.slot(49,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Daily & Weekly Quests");
     }
     private static void questDetail(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin,Guild.Quest q,Runnable back){
-        Menu m=new Menu(6);m.slot(4,questItem(p,q),(pl,c)->{});int slot=9;
-        for(var e:q.contributions.entrySet().stream().sorted((a,b)->Integer.compare(b.getValue(),a.getValue())).limit(36).toList()){
+        Menu m=new Menu(6);
+        boolean bingo=q.id.startsWith("bingo-");
+        int yours=q.amount(p.getUuid());
+        int rewardCount=q.rewardCount>0?q.rewardCount:Math.max(1,q.candies);
+        ItemStack reward=questRewardPreview(p,q);
+        String rewardName=GuildRewardCodec.displayName(reward,q.rewardItemId);
+        m.slot(4,questItem(p,q,bingo),(pl,c)->{});
+        m.slot(11,item(Items.COMPASS,"§eWhat do I need to do?",
+            "§7"+questGoal(q),
+            "§7Complete this together with guild members.",
+            "§7Minimum individual participation: "+q.minimum),(pl,c)->{});
+        // Keep all item components, display name and count so modded rewards are accurately previewed.
+        m.slot(13,reward,(pl,c)->{});
+        m.slot(14,item(Items.CHEST,"§aQuest Reward","§7"+rewardCount+"x "+rewardName,
+            "§7Every eligible member gets the reward.",
+            "§7No item is consumed from this preview."),(pl,c)->{});
+        m.slot(15,item(Items.CLOCK,"§bTime Remaining",
+            "§7"+(q.expiresAt<=System.currentTimeMillis()?"Expired":questTimeLeft(q))), (pl,c)->{});
+        m.slot(20,item(Items.WRITABLE_BOOK,"§eShared Guild Progress",
+            "§7"+q.progress()+"/"+q.target,
+            "§7"+(q.completed?"Goal completed!":"Work together to finish the quest.")),(pl,c)->{});
+        m.slot(22,item(Items.PLAYER_HEAD,"§bYour Contribution",
+            "§7"+yours+"/"+q.minimum,
+            "§7"+(yours>=q.minimum?"Participation requirement met":"More participation required")),(pl,c)->{});
+        m.slot(24,item(q.claimed.contains(p.getUuidAsString())?Items.LIME_DYE:q.completed?Items.EMERALD:Items.GRAY_DYE,
+            "§eReward Status","§7"+(q.claimed.contains(p.getUuidAsString())?"Already claimed":q.eligible(p.getUuid())?"Ready to claim":q.completed?"Not eligible":"Quest in progress")),(pl,c)->{});
+        m.slot(31,item(Items.BOOK,"§aGuild Contributions","§7Top contributors listed below"),(pl,c)->{});
+        int slot=36;
+        for(var e:q.contributions.entrySet().stream().sorted((a,b)->Integer.compare(b.getValue(),a.getValue())).limit(9).toList()){
             String name=g.memberNames.getOrDefault(e.getKey(),e.getKey());
             m.slot(slot++,item(Items.PAPER,"§e"+name,"§7Contributed: "+e.getValue()),(pl,c)->{});
         }
-        m.slot(49,item(Items.ARROW,"Back"),(pl,c)->back.run());m.open(p,"Quest · "+q.name);
+        if(!admin && q.eligible(p.getUuid()))m.slot(47,item(Items.CHEST,"§aClaim Your Reward",
+            "§7"+rewardCount+"x "+rewardName),(pl,c)->{
+                svc.claim(pl);back.run();
+            });
+        m.slot(49,item(Items.ARROW,"Back"),(pl,c)->back.run());
+        m.open(p,(bingo?"Bingo":"Quest")+" · "+q.name);
     }
     private static void achievements(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
         Menu m=new Menu(6);String[][] goals={{"First 100 Captures","100 total captures"},{"Capture Veterans","1,000 total captures"},{"Quest Adventurers","10 completed quests"},{"Quest Masters","100 completed quests"}};
@@ -641,7 +689,7 @@ public final class GuildGui {
         svc.ensureQuests(g);Menu m=new Menu(6);int i=0;
         for(Guild.Quest q:g.quests.values()){
             if(!q.kind.equals("species_capture")||q.expiresAt<System.currentTimeMillis()&&!q.completed)continue;
-            if(i>=45)break;m.slot(i++,questItem(p,q),(pl,c)->questDetail(pl,svc,g,admin,q,()->bounties(pl,svc,g,admin)));
+            if(i>=45)break;m.slot(i++,questItem(p,q,false),(pl,c)->questDetail(pl,svc,g,admin,q,()->bounties(pl,svc,g,admin)));
         }
         m.slot(49,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Guild Bounties");
     }
