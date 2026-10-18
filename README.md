@@ -1,6 +1,6 @@
 # Cobblemon Guilds System
 
-**Version:** `0.4.6` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
+**Version:** `0.4.7` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
 
 This version targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is installed **only on the dedicated server** (`fabric.mod.json` uses `"environment": "server"`). Players need only the normal client mods required by the server. It does not register client entrypoints, add HUDs, use bossbars, scoreboards or sidebars.
 
@@ -26,7 +26,7 @@ Previously quest XP was awarded equal to the target count, so a quest requiring 
 
 ## Buffs
 
-Cobblemon event-backed shop: Shiny x2/x3, Rare Spawn Bucket x2, catch x1.5 (permanent) / x2, battle EXP x2, battle EV x2 and friendship x2. Bank-funded purchases and timed stacking are implemented but **enabled by default** for the eight implemented buffs (`config/cobbleguilds.json`: `buffPurchasesEnabled: true`), and configurable from `/guild config`. No on-screen indicators are added. **Hidden Ability** and **Alpha** boosts are NOT implemented / not offered for purchase because they require a compatible spawn/ability integration for the specific Cobblemon addons used on the server.
+Cobblemon event-backed shop: Shiny x2/x3, Rare Spawn Bucket x2, catch x1.5 (permanent) / x2, battle EXP x2, battle EV x2 and friendship x2. Bank-funded purchases and timed stacking are implemented but **enabled by default** for the eight implemented buffs (`config/cobbleguilds.json`: `buffPurchasesEnabled: true`), and configurable from `/guild config`. No on-screen indicators are added.
 
 ## Quests and Guild features
 
@@ -50,7 +50,7 @@ Admin menu: `/guild admin`. Chat monitoring: `/guild chatspy` (OP 4 or correspon
 
 - Guild economy transactions and shared chests need crash/dupe tests before production use.
 - Chat name mixin integration with rank providers and other chat decorators.
-- Captures outside vanilla spawn pipeline, optional addons, and special Alpha/hidden-ability mechanics.
+- Captures outside the Cobblemon spawning pipeline and optional third-party addons.
 - Menus are server-side chests, not a graphical custom client screen. Offline skins may require a real profile texture cache; this release uses known/online profiles.
 - Archived guilds can never be restored. See `docs/ADMIN_CONFIG_ARCHIVES.md` for archive-only administration, NBT-backed custom modded item quest rewards, menu-based configuration and permanent deletion safeguards.
 
@@ -94,3 +94,11 @@ Admin menu: `/guild admin`. Chat monitoring: `/guild chatspy` (OP 4 or correspon
 - Removed the administrator-only x1,000,000 multiplier controls, test-buff handlers and their GUI entries. Only the regular, configurable and paid guild buffs remain.
 - Existing guild data from 0.4.5 is supported. On startup, saved experimental effect keys are removed from active and archived guilds automatically; purchased buffs, expiry times, bank balances, quests and inventory files remain unchanged.
 - Removed the `-alpha` suffix from the project version and output JAR name. This is a release-label change, not a guarantee of compatibility with every third-party addon.
+
+
+## 0.4.7 — Clean buff list and documented JSON configuration
+
+- Removed unused Hidden Ability x2 and Alpha Spawn x2 placeholders. Only implemented buffs appear in guild menus.
+- `config/cobbleguilds.json` now contains `_comment_*` documentation immediately before each setting. `config/cobbleguilds-quests.json` includes an `_guide` describing supported quest kinds, targets and custom rewards.
+- These are valid JSON documentation fields ignored on load and regenerated when settings are saved. Existing prices, quest definitions and modded item rewards are preserved. Restart once after updating to add documentation to existing files.
+- Manual edits can be applied with `/guild config` → Reload Server Config / Reload Quest Templates. Invalid settings are rejected.
