@@ -29,12 +29,12 @@ public final class GuildQuestConfig {
             for(var q:QuestCatalog.DAILY)defaults.quests.add(new Entry("daily",q));
             for(var q:QuestCatalog.WEEKLY)defaults.quests.add(new Entry("weekly",q));
             defaults.save();
-        }else {reload();current.save();} // Preserve old settings while adding in-file help guide.
+        }else {reload();current.save();} // Preserve existing quest settings and regenerate # explanations.
     }
     /** Only swap the live catalog after every required entry passes validation. */
     public static void reload(){
         try{
-            GuildQuestConfig candidate=GuildConfig.JSON.fromJson(Files.readString(path(),StandardCharsets.UTF_8),GuildQuestConfig.class);
+            GuildQuestConfig candidate=GuildConfig.JSON.fromJson(GuildHashComments.strip(Files.readString(path(),StandardCharsets.UTF_8)),GuildQuestConfig.class);
             if(candidate==null)throw new IllegalArgumentException("Empty quest config");
             candidate.apply();current=candidate;
         }catch(Exception e){throw new IllegalArgumentException("Quest reload failed, old settings retained: "+e.getMessage(),e);}

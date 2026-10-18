@@ -43,10 +43,10 @@ public final class GuildConfig {
             GuildConfig loaded;
             if(Files.exists(path())){
                 String raw=Files.readString(path(),StandardCharsets.UTF_8);
-                loaded=JSON.fromJson(raw,GuildConfig.class);
+                loaded=JSON.fromJson(GuildHashComments.strip(raw),GuildConfig.class);
                 if(loaded==null)throw new IllegalArgumentException("Empty configuration");
                 // v0.3.x shipped disabled-by-default. Enable on the first schema migration.
-                if(!com.google.gson.JsonParser.parseString(raw).getAsJsonObject().has("configVersion") || loaded.configVersion<2){
+                if(!com.google.gson.JsonParser.parseString(GuildHashComments.strip(raw)).getAsJsonObject().has("configVersion") || loaded.configVersion<2){
                     loaded.buffPurchasesEnabled=true;loaded.configVersion=2;
                 }
             } else loaded=new GuildConfig();
@@ -83,7 +83,7 @@ public final class GuildConfig {
     /** Fully validate disk input BEFORE mutating in-memory settings. */
     public void reload(){
         try{
-            GuildConfig candidate=JSON.fromJson(Files.readString(path(),StandardCharsets.UTF_8),GuildConfig.class);
+            GuildConfig candidate=JSON.fromJson(GuildHashComments.strip(Files.readString(path(),StandardCharsets.UTF_8)),GuildConfig.class);
             if(candidate==null)throw new IllegalArgumentException("Empty config");
             candidate.validate();copyFrom(candidate);
         }catch(Exception e){throw new IllegalArgumentException("Config reload failed; runtime values were preserved: "+e.getMessage(),e);}

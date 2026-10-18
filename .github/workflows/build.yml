@@ -34,6 +34,10 @@ jobs:
         run: |
           javac -d /tmp/guildtests src/main/java/dev/silver/cobbleguilds/GuildBuffMath.java src/test/java/dev/silver/cobbleguilds/GuildBuffMathSelfTest.java
           java -cp /tmp/guildtests dev.silver.cobbleguilds.GuildBuffMathSelfTest
+      - name: Verify hash-comment config parser
+        run: |
+          javac -d /tmp/guildtests src/main/java/dev/silver/cobbleguilds/GuildHashComments.java src/test/java/dev/silver/cobbleguilds/GuildHashCommentsSelfTest.java
+          java -cp /tmp/guildtests dev.silver.cobbleguilds.GuildHashCommentsSelfTest
       - name: Run build
         run: gradle --no-daemon clean build
       - name: Store build output

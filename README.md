@@ -1,6 +1,6 @@
 # Cobblemon Guilds System
 
-**Version:** `0.4.7` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
+**Version:** `0.4.8` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
 
 This version targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is installed **only on the dedicated server** (`fabric.mod.json` uses `"environment": "server"`). Players need only the normal client mods required by the server. It does not register client entrypoints, add HUDs, use bossbars, scoreboards or sidebars.
 
@@ -102,3 +102,8 @@ Admin menu: `/guild admin`. Chat monitoring: `/guild chatspy` (OP 4 or correspon
 - `config/cobbleguilds.json` now contains `_comment_*` documentation immediately before each setting. `config/cobbleguilds-quests.json` includes an `_guide` describing supported quest kinds, targets and custom rewards.
 - These are valid JSON documentation fields ignored on load and regenerated when settings are saved. Existing prices, quest definitions and modded item rewards are preserved. Restart once after updating to add documentation to existing files.
 - Manual edits can be applied with `/guild config` → Reload Server Config / Reload Quest Templates. Invalid settings are rejected.
+
+
+## 0.4.8 — Config annotations using #
+
+`config/cobbleguilds.json` and `config/cobbleguilds-quests.json` now contain `#` comment lines above editable values. Comments after a value are supported too. The parser leaves `#` inside quoted text (e.g. guild names) unchanged. Existing values are preserved. Annotations are recreated on config saves. **This is not strict JSON** and needs CobbleGuilds' reader or removal of comment lines for external parsers.

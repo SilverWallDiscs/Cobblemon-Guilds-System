@@ -1,15 +1,12 @@
 package dev.silver.cobbleguilds;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * In-file guidance for the two JSON configuration files. Unlike // comments or
- * JSONC, _comment_* and _guide are valid JSON properties. Gson ignores them on
- * load and reload; they are regenerated on every save, preserving user values.
+ * Provides actual # comments directly inside the config files.
+ * They are stripped before JSON parsing by GuildHashComments.
  */
 public final class GuildConfigComments {
     private GuildConfigComments() {}
@@ -57,26 +54,39 @@ public final class GuildConfigComments {
         QUEST_HELP.put("enabled", "true allows this quest in new rotations; false excludes it. Keep at least one enabled daily and one weekly quest.");
     }
 
-    public static String server(GuildConfig config) {
-        JsonObject original=GuildConfig.JSON.toJsonTree(config).getAsJsonObject();
-        JsonObject documented=new JsonObject();
-        documented.addProperty("_readme", "These _comment_* fields are documentation and are ignored by the mod. Edit the value AFTER each comment. This is valid JSON; do not add // comments. Use /guild config -> Reload Server Config after manual edits, or restart.");
-        String ids=GuildBuffs.OFFERS.stream().map(GuildBuffs.Offer::id).collect(Collectors.joining(", "));
-        for(Map.Entry<String,JsonElement> entry:original.entrySet()){
-            String help=SERVER_HELP.get(entry.getKey());
-            if(help!=null)documented.addProperty("_comment_"+entry.getKey(),help.replace("SUPPORTED_BUFF_IDS",ids));
-            documented.add(entry.getKey(),entry.getValue());
+    /** Attach field comments to Gson's pretty-printed JSON without changing values. */
+    private static String annotate(String json,Map<String,String> help,String heading){
+        StringBuilder result=new StringBuilder();
+        result.append("# ").append(heading).append('\n');
+        result.append("# Edit the JSON values below. Lines starting with # are explanations.\n");
+        result.append("# CobbleGuilds accepts hash comments; strict JSON tools do not.\n");
+        for(String line:json.split("\n",-1)){
+            String trimmed=line.stripLeading();
+            if(trimmed.startsWith("\"")){
+                int end=trimmed.indexOf('"',1);
+                if(end>1 && trimmed.substring(end+1).stripLeading().startsWith(":")){
+                    String note=help.get(trimmed.substring(1,end));
+                    if(note!=null){
+                        String indent=line.substring(0,line.length()-trimmed.length());
+                        for(String explanation:note.split("\n"))result.append(indent).append("# ").append(explanation).append('\n');
+                    }
+                }
+            }
+            result.append(line).append('\n');
         }
-        return GuildConfig.JSON.toJson(documented);
+        return result.toString();
     }
 
-    public static String quests(GuildQuestConfig config) {
-        JsonObject documented=new JsonObject();
-        documented.addProperty("_readme", "Guide for cobbleguilds-quests.json. _guide is documentation ignored by the mod. Modify quest entries below, or use /guild config. Use Reload Quest Templates after manual edits; new objectives apply to future rotations. Reload can sync unclaimed reward items without resetting progress.");
-        JsonObject guide=new JsonObject();
-        for(var entry:QUEST_HELP.entrySet())guide.addProperty(entry.getKey(),entry.getValue());
-        documented.add("_guide",guide);
-        documented.add("quests",GuildConfig.JSON.toJsonTree(config.quests));
-        return GuildConfig.JSON.toJson(documented);
+    public static String server(GuildConfig config){
+        String ids=GuildBuffs.OFFERS.stream().map(GuildBuffs.Offer::id).collect(Collectors.joining(", "));
+        Map<String,String> notes=new LinkedHashMap<>(SERVER_HELP);
+        notes.replaceAll((k,v)->v.replace("SUPPORTED_BUFF_IDS",ids));
+        return annotate(GuildConfig.JSON.toJson(config),notes,"CobbleGuilds server configuration");
+    }
+
+    public static String quests(GuildQuestConfig config){
+        Map<String,String> notes=new LinkedHashMap<>(QUEST_HELP);
+        notes.put("quests","Daily and weekly quest templates. Each includes its own objective and reward.\nUse /guild config to select custom modded ItemStacks.");
+        return annotate(GuildConfig.JSON.toJson(config),notes,"CobbleGuilds quest templates");
     }
 }
