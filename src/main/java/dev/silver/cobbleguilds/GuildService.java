@@ -74,7 +74,10 @@ public final class GuildService {
         String id=p.getUuidAsString();
         if(g.banned.contains(id)){tell(p,"You are banned from that guild.");return;}
         if(g.members.size()>=g.capacity(config.maxGuildMembers)){tell(p,"This guild is full.");return;}
-        if(g.publicGuild || g.invitations.remove(id)){
+        if(g.publicGuild || g.invitations.contains(id)){
+            for(Guild other:store.all()){
+                other.invitations.remove(id);other.ordinaryInvites.remove(id);other.pending.remove(id);
+            }
             g.pending.remove(id);g.ordinaryInvites.remove(id);g.members.put(id,g.defaultRank());g.memberNames.put(id,p.getName().getString());
             g.addAudit(p.getName().getString()+" joined");store.save();
             tell(p,"Joined guild §e"+g.name+"§f!");
@@ -91,7 +94,7 @@ public final class GuildService {
         if(g.allowed(sender.getUuid(),"manage_applications"))g.invitations.add(target.getUuidAsString());
         else g.ordinaryInvites.add(target.getUuidAsString());
         store.save();
-        tell(target,"§e"+sender.getName().getString()+" §finvited you to §e"+g.name+"§f. Use /guild join "+g.name);
+        tell(target,"§e"+sender.getName().getString()+" §finvited you to §e"+g.name+"§f. Open /guilds and choose Invitations to respond.");
         tell(sender,"Guild invitation sent.");
     }
     public void accept(ServerPlayerEntity moderator,ServerPlayerEntity target){
@@ -156,7 +159,7 @@ public final class GuildService {
         if(g==null){tell(p,"You are not in a guild.");return;}
         String plain=message.replace('§',' ').trim();
         if(plain.isEmpty())return;
-        String line="§7[Guild] "+g.color+"["+g.tag+"] §f"+p.getName().getString()+": "+plain;
+        String line=g.color+"["+g.tag+"] §f"+p.getName().getString()+": "+plain;
         for(ServerPlayerEntity recipient:server.getPlayerManager().getPlayerList()){
             if(g.contains(recipient.getUuid()))recipient.sendMessage(Text.literal(line),false);
             else if(spy.contains(recipient.getUuid()) && isAdmin(recipient,"cobbleguilds.admin.chatspy"))
@@ -289,6 +292,43 @@ public final class GuildService {
                 }
             }
         }
+    }
+    /** Update only unclaimed, non-expired active quest rewards; never alter completed payouts already claimed. */
+    public int syncConfiguredRewards(){
+        int changes=0;
+        List<GuildQuestConfig.Entry> templates=GuildQuestConfig.current().quests;
+        long now=System.currentTimeMillis();
+        for(Guild guild:store.all())for(Guild.Quest quest:guild.quests.values()){
+            if(quest.expiresAt<=now || !quest.claimed.isEmpty())continue;
+            String newItemId=null,newItemData=null;int newCount=0;
+            if(quest.id.startsWith("bingo-")){
+                newItemId=config.bingoRewardItemId;newItemData=config.bingoRewardItemData;newCount=config.bingoRewardCount;
+            }else{
+                for(GuildQuestConfig.Entry template:templates){
+                    if(template.enabled && template.name.equalsIgnoreCase(quest.name)){
+                        newItemId=template.rewardItemId;newItemData=template.rewardItemData;newCount=template.rewardCount;break;
+                    }
+                }
+            }
+            if(newItemId==null || newCount<1)continue;
+            // Do not overwrite an existing reward until the replacement can be decoded successfully.
+            try { GuildRewardCodec.decode(server.getRegistryManager(),newItemData,newItemId,newCount); }
+            catch(Exception ex){CobbleGuilds.LOG.warn("Cannot apply configured reward for quest {}",quest.id,ex);continue;}
+            if(Objects.equals(quest.rewardItemId,newItemId) && Objects.equals(quest.rewardItemData,newItemData) && quest.rewardCount==newCount)continue;
+            quest.rewardItemId=newItemId;quest.rewardItemData=newItemData;quest.rewardCount=newCount;changes++;
+        }
+        if(changes>0)store.save();
+        return changes;
+    }
+    public void renameUnclaimedQuest(String previous,String newName){
+        if(previous.equals(newName))return;
+        boolean changed=false;
+        for(Guild guild:store.all())for(Guild.Quest quest:guild.quests.values()){
+            if(!quest.id.startsWith("bingo-") && quest.claimed.isEmpty() && quest.expiresAt>System.currentTimeMillis() && quest.name.equalsIgnoreCase(previous)){
+                quest.name=newName;changed=true;
+            }
+        }
+        if(changed)store.save();
     }
     public void listQuests(ServerPlayerEntity p){
         Guild g=mine(p);if(g==null){tell(p,"You are not in a guild.");return;}

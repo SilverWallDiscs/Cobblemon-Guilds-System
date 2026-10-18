@@ -16,6 +16,31 @@ import java.util.Base64;
 /** Full server-side ItemStack component/NBT snapshot, including registered modded items. */
 public final class GuildRewardCodec {
     private GuildRewardCodec(){}
+    /** Human-readable item name, including custom names and a fallback for modded lang keys absent on the dedicated server. */
+    public static String displayName(ItemStack stack,String itemId){
+        if(stack.isEmpty())return "Unknown Item";
+        String translated=stack.getName().getString();
+        if(!translated.isBlank() && !translated.equals(itemId) && !translated.matches("(?:item|block)\\.[a-z0-9_.-]+"))return translated;
+        String id=itemId==null?"unknown_item":itemId.substring(itemId.lastIndexOf(':')+1);
+        String[] words=id.split("[_ .-]+");StringBuilder human=new StringBuilder();
+        for(String word:words)if(!word.isEmpty()){
+            if(!human.isEmpty())human.append(' ');
+            human.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return human.isEmpty()?"Unknown Item":human.toString();
+    }
+    public static String displayName(DynamicRegistryManager registries,String itemId,String encoded,int quantity){
+        try{return displayName(decode(registries,encoded,itemId,quantity),itemId);}
+        catch(RuntimeException exception){
+            String path=itemId==null?"Unknown Item":itemId.substring(itemId.lastIndexOf(':')+1);
+            StringBuilder label=new StringBuilder();
+            for(String word:path.split("[_ .-]+"))if(!word.isEmpty()){
+                if(!label.isEmpty())label.append(' ');
+                label.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+            }
+            return label.isEmpty()?"Unknown Item":label.toString();
+        }
+    }
     public static String encode(ItemStack item,DynamicRegistryManager registries){
         if(item.isEmpty()||item.getCount()<1||item.getCount()>64||item.getCount()>item.getMaxCount())throw new IllegalArgumentException("Hold an item stack of 1-64 items");
         try {
@@ -34,7 +59,8 @@ public final class GuildRewardCodec {
                 if(bytes.length>16384)throw new IllegalArgumentException("Oversized reward");
                 NbtCompound nbt=NbtIo.readCompressed(new ByteArrayInputStream(bytes),NbtSizeTracker.of(65536));
                 ItemStack stack=ItemStack.fromNbt(registries,nbt).orElse(ItemStack.EMPTY);
-                if(stack.isEmpty()||stack.getCount()<1||stack.getCount()>stack.getMaxCount())throw new IllegalArgumentException("Unknown or oversized reward item");
+                if(stack.isEmpty()||amount<1||amount>stack.getMaxCount())throw new IllegalArgumentException("Unknown or oversized reward item");
+                stack.setCount(amount);
                 return stack;
             }catch(Exception e){throw new IllegalArgumentException("Cannot decode configured reward item",e);}
         }

@@ -44,10 +44,10 @@ public final class GuildConfigMenu {
             if(!guard(a,svc))return;try{svc.config.guildCreatePrice=money(v);svc.config.save();}catch(Exception ex){error(a,ex.getMessage());}main(a,svc);
         }));
         m.slot(32,button(Items.CLOCK,"§bReload Server Config","§7Reload cobbleguilds.json only","§7Keeps live guilds and quests unchanged"),(pl,c)->{
-            if(!guard(pl,svc))return;try{svc.config.reload();GuildService.tell(pl,"Server config reloaded successfully.");}catch(Exception ex){error(pl,ex.getMessage());}main(pl,svc);
+            if(!guard(pl,svc))return;try{svc.config.reload();int updated=svc.syncConfiguredRewards();GuildService.tell(pl,"Server config reloaded. Updated " + updated + " unclaimed active rewards.");}catch(Exception ex){error(pl,ex.getMessage());}main(pl,svc);
         });
         m.slot(33,button(Items.KNOWLEDGE_BOOK,"§aReload Quest Templates","§7Reload cobbleguilds-quests.json only","§7Existing quests retain their original reward"),(pl,c)->{
-            if(!guard(pl,svc))return;try{GuildQuestConfig.reload();GuildService.tell(pl,"Quest templates reloaded successfully.");}catch(Exception ex){error(pl,ex.getMessage());}main(pl,svc);
+            if(!guard(pl,svc))return;try{GuildQuestConfig.reload();int updated=svc.syncConfiguredRewards();GuildService.tell(pl,"Quest templates reloaded. Updated " + updated + " unclaimed active rewards.");}catch(Exception ex){error(pl,ex.getMessage());}main(pl,svc);
         });
         m.slot(49,button(Items.ARROW,"§7Back"),(pl,c)->GuildGui.adminHub(pl,svc));m.open(p,"Guilds · Configuration");
     }
@@ -59,7 +59,7 @@ public final class GuildConfigMenu {
             int index=i;GuildQuestConfig.Entry q=quests.get(i);
             m.slot(i-from,button(q.enabled?Items.WRITABLE_BOOK:Items.BARRIER,(q.enabled?"§a":"§8")+q.name,
                 "§7Cadence: "+q.cadence,"§7Objective: "+q.kind,"§7Target: "+q.target+" | Minimum: "+q.minimum,
-                "§7Item: "+q.rewardItemId+" x"+q.rewardCount,"§eClick to edit"),(pl,c)->quest(pl,svc,index,page));
+                "§7Reward: "+GuildRewardCodec.displayName(svc.server.getRegistryManager(),q.rewardItemId,q.rewardItemData,q.rewardCount)+" x"+q.rewardCount,"§eClick to edit"),(pl,c)->quest(pl,svc,index,page));
         }
         if(page>0)m.slot(45,button(Items.ARROW,"Previous"),(pl,c)->quests(pl,svc,page-1));
         if(from+45<quests.size())m.slot(53,button(Items.ARROW,"Next"),(pl,c)->quests(pl,svc,page+1));
@@ -72,7 +72,7 @@ public final class GuildConfigMenu {
         m.slot(49,button(Items.ARROW,"§7Back"),(pl,c)->main(pl,svc));m.open(p,"Guilds · Quest Templates");
     }
     private static void saveQuests(ServerPlayerEntity p,GuildService svc,Runnable back){
-        try{GuildQuestConfig.current().save();GuildService.tell(p,"Quest template saved. Active quests keep their original objectives/rewards.");}
+        try{GuildQuestConfig.current().save();int updated=svc.syncConfiguredRewards();GuildService.tell(p,"Quest template saved. Updated " + updated + " unclaimed active rewards.");}
         catch(Exception ex){error(p,ex.getMessage());try{GuildQuestConfig.reload();}catch(Exception ignored){}}
         back.run();
     }
@@ -84,7 +84,7 @@ public final class GuildConfigMenu {
         GuildGui.Menu m=new GuildGui.Menu(6);
         m.slot(4,button(Items.BOOK,"§e"+q.name,"§7"+q.kind+" · "+q.cadence,"§7Target "+q.target+" | Minimum "+q.minimum),(pl,c)->{});
         m.slot(10,button(Items.NAME_TAG,"§eName: "+q.name),(pl,c)->prompt(pl,"a quest name (max 48 characters)",(a,v)->{
-            if(!guard(a,svc))return;if(v.isBlank()||v.length()>48)error(a,"Invalid name.");else q.name=v;
+            if(!guard(a,svc))return;if(v.isBlank()||v.length()>48)error(a,"Invalid name.");else {String old=q.name;q.name=v;svc.renameUnclaimedQuest(old,v);}
             saveQuests(a,svc,()->quest(a,svc,index,page));
         }));
         m.slot(11,button(Items.COMPASS,"§eObjective: "+q.kind,"§7Click to choose"),(pl,c)->kinds(pl,svc,index,page));
@@ -108,7 +108,7 @@ public final class GuildConfigMenu {
         ItemStack preview;
         try{preview=GuildRewardCodec.decode(svc.server.getRegistryManager(),q.rewardItemData,q.rewardItemId,q.rewardCount);}catch(Exception e){preview=button(Items.BARRIER,"§cUnknown reward item");}
         final ItemStack shown=preview.copy();
-        m.slot(22,button(Items.PAPER,"§aReward: "+q.rewardItemId,"§7Count: "+q.rewardCount,"§7Click with an item on the cursor, or hold it in your main hand","§7The item is copied, never removed"),(pl,c)->{
+        m.slot(22,button(Items.PAPER,"§aReward: "+GuildRewardCodec.displayName(preview,q.rewardItemId),"§7Count: "+q.rewardCount,"§7Click with an item on the cursor, or hold it in your main hand","§7The item is copied, never removed"),(pl,c)->{
             if(!guard(pl,svc))return;
             ItemStack held=c.isEmpty()?pl.getMainHandStack():c;
             if(held.isEmpty()){error(pl,"Hold a reward item first.");return;}
@@ -149,16 +149,16 @@ public final class GuildConfigMenu {
             try{int value=Integer.parseInt(v);if(value<0||value>500)throw new IllegalArgumentException();svc.config.bingoLineExperience=value;svc.config.save();}
             catch(Exception ex){error(a,"Invalid XP amount.");}bingo(a,svc);
         }));
-        m.slot(13,button(Items.WRITABLE_BOOK,"§aBingo Tile Reward: "+svc.config.bingoRewardItemId,"§7Hold a modded item or use cursor","§7Item is never consumed"),(pl,c)->{
+        m.slot(13,button(Items.WRITABLE_BOOK,"§aBingo Tile Reward: "+GuildRewardCodec.displayName(svc.server.getRegistryManager(),svc.config.bingoRewardItemId,svc.config.bingoRewardItemData,svc.config.bingoRewardCount),"§7Hold a modded item or use cursor","§7Item is never consumed"),(pl,c)->{
             ItemStack held=c.isEmpty()?pl.getMainHandStack():c;if(held.isEmpty()){error(pl,"Hold an item.");return;}
             try{svc.config.bingoRewardItemData=GuildRewardCodec.encode(held,svc.server.getRegistryManager());
-                svc.config.bingoRewardItemId=Registries.ITEM.getId(held.getItem()).toString();svc.config.bingoRewardCount=held.getCount();svc.config.save();}
+                svc.config.bingoRewardItemId=Registries.ITEM.getId(held.getItem()).toString();svc.config.bingoRewardCount=held.getCount();svc.config.save();svc.syncConfiguredRewards();}
             catch(Exception ex){error(pl,ex.getMessage());}bingo(pl,svc);
         });
         m.slot(14,button(Items.PAPER,"§eBingo Reward Count: "+svc.config.bingoRewardCount),(pl,c)->prompt(pl,"Bingo reward quantity (1-64)",(a,v)->{
             try{int count=Integer.parseInt(v);if(count<1||count>64)throw new IllegalArgumentException();
                 ItemStack stack=GuildRewardCodec.decode(svc.server.getRegistryManager(),svc.config.bingoRewardItemData,svc.config.bingoRewardItemId,svc.config.bingoRewardCount);
-                stack.setCount(count);svc.config.bingoRewardItemData=GuildRewardCodec.encode(stack,svc.server.getRegistryManager());svc.config.bingoRewardCount=count;svc.config.save();
+                stack.setCount(count);svc.config.bingoRewardItemData=GuildRewardCodec.encode(stack,svc.server.getRegistryManager());svc.config.bingoRewardCount=count;svc.config.save();svc.syncConfiguredRewards();
             }catch(Exception ex){error(a,"Invalid amount.");}bingo(a,svc);
         }));
         m.slot(22,button(Items.ARROW,"§7Back"),(pl,c)->main(pl,svc));m.open(p,"Guild Bingo Config");

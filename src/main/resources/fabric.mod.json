@@ -23,8 +23,5 @@
   },
   "suggests": {
     "luckperms": "*"
-  },
-  "mixins": [
-    "cobbleguilds.mixins.json"
-  ]
+  }
 }

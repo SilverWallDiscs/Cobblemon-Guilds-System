@@ -62,3 +62,14 @@ Admin menu: `/guild admin`. Chat monitoring: `/guild chatspy` (OP 4 or correspon
 - Back controls are centered in the bottom row of the vanilla menus. No custom client mod or persistent HUD.
 
 **Alpha warning:** Tests run against isolated guild rules; gameplay and economy regression testing are still required. Always back up a world before migration or archive deletion.
+
+## 0.4.2-alpha — guild invitations and reward display
+
+- Guild invites now direct players to `/guilds` → **Invitations** instead of a nonexistent `/guild join` command. The invitation browser has explicit accept/decline actions; private guilds respect whether an invite was pre-approved.
+- Global chat no longer receives any guild tag: the signed-chat mixin and its registration were removed. Only `/g` shows `[TAG] Player: message`, with no extra `[Guild]` prefix. `/ga` retains `[Alliance]` and the guild tag.
+- Application heads now use the real online player's profile, rather than an unskinned generic head. Offline players rely on vanilla profile resolution, so offline skins may take time or use a default.
+- Quest and Bingo rewards now show the selected item's actual icon and user-facing name, never the raw registry ID in the reward line. Names fall back to readable title case if the mod's translation is unavailable on a dedicated server.
+- Admin quest/bingo config menus show readable reward names. Saving/reloading quest templates synchronizes unclaimed, unexpired active quest rewards without resetting objectives/progress. Already claimed quests retain their payouts to prevent inconsistent rewards.
+- The persisted stack snapshot remains the authoritative modded item, with all components/NBT, and the configured reward count is enforced when decoding.
+
+**Upgrade note:** Back up your world before replacing the JAR. `/guilds` remains the primary player UI; no client installation or HUD is required. Runtime-in-game compatibility is still awaiting multiplayer tests.

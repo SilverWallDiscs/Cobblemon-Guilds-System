@@ -43,6 +43,14 @@ public final class GuildGui {
         stack.set(DataComponentTypes.PROFILE,new ProfileComponent(online!=null?online.getGameProfile():new GameProfile(uuid,name)));
         return stack;
     }
+    static ItemStack applicantHead(GuildService svc,String id,String... lore){
+        UUID uuid=UUID.fromString(id);
+        ServerPlayerEntity online=svc.server.getPlayerManager().getPlayer(uuid);
+        String name=online!=null?online.getGameProfile().getName():uuid.toString();
+        ItemStack stack=item(Items.PLAYER_HEAD,"§e"+name,lore);
+        stack.set(DataComponentTypes.PROFILE,new ProfileComponent(online!=null?online.getGameProfile():new GameProfile(uuid,name)));
+        return stack;
+    }
     private static Item material(String id){try{Item i=Registries.ITEM.get(Identifier.of(id));return i==Items.AIR?Items.NAME_TAG:i;}catch(Exception e){return Items.NAME_TAG;}}
     public static ItemStack guildIcon(Guild g){return item(material(g.icon),g.color+g.name,"§7["+g.tag+"]","§7Leader: "+g.memberNames.getOrDefault(g.leader,"Unknown"),"§7Members: "+g.members.size(),"§7"+g.description,"§eClick for details");}
     /** Distinct active and permanently-disbanded collections; no restoration action exists. */
@@ -125,8 +133,44 @@ public final class GuildGui {
         Guild own=svc.mine(player);if(own!=null){guild(player,svc,own,false);return;}
         Menu menu=new Menu(1);
         menu.slot(2,item(Items.COMPASS,"§bBrowse Guilds","§7Choose a guild to join or apply"),(p,c)->browse(p,svc,0,false));
+        menu.slot(4,item(Items.WRITABLE_BOOK,"§eInvitations", "§7Pending: "+countInvitations(player,svc),"§7Click to accept or decline an invitation"),(p,c)->invitations(p,svc));
         menu.slot(6,item(Items.EMERALD,"§aCreate Guild","§7Price: $"+svc.config.guildCreatePrice),(p,c)->create(p,svc));
         menu.open(player,"CobbleGuilds");
+    }
+    private static int countInvitations(ServerPlayerEntity p,GuildService svc){
+        String id=p.getUuidAsString();int count=0;
+        for(Guild g:svc.store.all())if(!g.closed && (g.invitations.contains(id)||g.ordinaryInvites.contains(id)))count++;
+        return count;
+    }
+    private static void invitations(ServerPlayerEntity p,GuildService svc){
+        if(svc.mine(p)!=null){start(p,svc);return;}
+        String id=p.getUuidAsString();
+        List<Guild> invited=svc.store.all().stream().filter(g->!g.closed && (g.invitations.contains(id)||g.ordinaryInvites.contains(id))).toList();
+        Menu m=new Menu(6);
+        for(int i=0;i<Math.min(45,invited.size());i++){
+            Guild g=invited.get(i);
+            boolean direct=g.invitations.contains(id);
+            m.slot(i,guildIcon(g),(pl,c)->invitationDetail(pl,svc,g));
+        }
+        m.slot(49,item(Items.ARROW,"§7Back"),(pl,c)->start(pl,svc));m.open(p,"Guild Invitations ("+invited.size()+")");
+    }
+    private static void invitationDetail(ServerPlayerEntity p,GuildService svc,Guild g){
+        if(svc.mine(p)!=null){start(p,svc);return;}
+        String id=p.getUuidAsString();
+        if(g.closed||svc.store.byId(g.id)!=g||(!g.invitations.contains(id)&&!g.ordinaryInvites.contains(id))){invitations(p,svc);return;}
+        boolean direct=g.invitations.contains(id);Menu m=new Menu(3);
+        m.slot(4,guildIcon(g),(pl,c)->{});
+        m.slot(11,item(Items.EMERALD_BLOCK,"§aAccept Invitation",direct?"§7Join guild immediately":"§7Send a membership application"),(pl,c)->{
+            if(svc.mine(pl)!=null){start(pl,svc);return;}
+            if(g.closed||svc.store.byId(g.id)!=g){invitations(pl,svc);return;}
+            svc.join(pl,g.name);
+            if(svc.mine(pl)!=null)guild(pl,svc,svc.mine(pl),false);else invitations(pl,svc);
+        });
+        m.slot(15,item(Items.BARRIER,"§cDecline Invitation","§7Remove this invitation"),(pl,c)->{
+            g.invitations.remove(pl.getUuidAsString());g.ordinaryInvites.remove(pl.getUuidAsString());
+            g.addAudit(pl.getName().getString()+" declined an invitation");svc.store.save();invitations(pl,svc);
+        });
+        m.slot(22,item(Items.ARROW,"§7Back"),(pl,c)->invitations(pl,svc));m.open(p,"Invitation · "+g.tag);
     }
     public static void create(ServerPlayerEntity player,GuildService svc){
         if(svc.mine(player)!=null){start(player,svc);return;}
@@ -366,7 +410,7 @@ public final class GuildGui {
             ServerPlayerEntity target=svc.server.getPlayerManager().getPlayer(value);
             if(target==null){GuildService.tell(pl,"Player must be online.");guild(pl,svc,g,admin);return;}
             if(admin){if(svc.mine(target)!=null||g.banned.contains(target.getUuidAsString()))GuildService.tell(pl,"Target is unavailable.");
-                else{g.invitations.add(target.getUuidAsString());svc.store.save();GuildService.tell(target,"Admin invited you to "+g.name+". Open /guilds to accept.");}}
+                else{g.invitations.add(target.getUuidAsString());svc.store.save();GuildService.tell(target,"Admin invited you to "+g.name+". Open /guilds > Invitations to accept.");}}
             else svc.invite(pl,target);
             guild(pl,svc,g,admin);
         });
@@ -377,7 +421,7 @@ public final class GuildGui {
         for(String id:List.copyOf(g.pending)){
             if(slot>=45)break;
             ServerPlayerEntity online=svc.server.getPlayerManager().getPlayer(UUID.fromString(id));
-            m.slot(slot++,item(Items.PLAYER_HEAD,"§e"+(online==null?id:online.getName().getString()),"§7Click to review application"),(pl,c)->reviewApplication(pl,svc,g,admin,id));
+            m.slot(slot++,applicantHead(svc,id,"§7Click to review application"),(pl,c)->reviewApplication(pl,svc,g,admin,id));
         }
         m.slot(49,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Guild Applications");
     }
@@ -385,7 +429,7 @@ public final class GuildGui {
         if(!can(p,svc,g,"manage_applications",admin)||!g.pending.contains(id)){pending(p,svc,g,admin);return;}
         ServerPlayerEntity online=svc.server.getPlayerManager().getPlayer(UUID.fromString(id));
         Menu m=new Menu(3);
-        m.slot(4,item(Items.PLAYER_HEAD,"§e"+(online==null?id:online.getName().getString()),"§7Pending application"),(pl,c)->{});
+        m.slot(4,applicantHead(svc,id,"§7Pending application"),(pl,c)->{});
         m.slot(11,item(Items.EMERALD_BLOCK,"§aAccept Player"),(pl,c)->{
             if(!can(pl,svc,g,"manage_applications",admin)||!g.pending.contains(id))return;
             if(svc.store.member(UUID.fromString(id))!=null || g.members.size()>=g.capacity(svc.config.maxGuildMembers)){
@@ -529,9 +573,23 @@ public final class GuildGui {
         default -> "Complete "+q.target+" "+q.kind.replace('_',' ') +" actions";
     };}
     private static ItemStack questItem(ServerPlayerEntity p,Guild.Quest q){
-        return item(q.completed?Items.EMERALD:Items.PAPER,"§d"+q.name,"§7Objective: "+questGoal(q),"§7Guild progress: "+q.progress()+"/"+q.target,
-                "§7Your contribution: "+q.amount(p.getUuid())+"/"+q.minimum,"§7Reward: "+(q.rewardCount>0?q.rewardCount:Math.max(1,q.candies))+"x "+q.rewardItemId,
-                "§7Status: "+(q.completed?"Completed":q.expiresAt<System.currentTimeMillis()?"Expired":"Active"),"§eClick for details");
+        int count=q.rewardCount>0?q.rewardCount:Math.max(1,q.candies);
+        ItemStack reward;
+        String label;
+        try {
+            reward=GuildRewardCodec.decode(p.getServer().getRegistryManager(),q.rewardItemData,q.rewardItemId,count);
+            label=GuildRewardCodec.displayName(reward,q.rewardItemId);
+        }catch(Exception e){reward=new ItemStack(Items.BARRIER);label="Reward item unavailable";}
+        // Show the actual reward item as the quest icon, while describing the objective in its lore.
+        reward.setCount(1);
+        reward.set(DataComponentTypes.CUSTOM_NAME,Text.literal("§d"+q.name));
+        reward.set(DataComponentTypes.LORE,new LoreComponent(List.of(
+            Text.literal("§7Objective: "+questGoal(q)),Text.literal("§7Guild progress: "+q.progress()+"/"+q.target),
+            Text.literal("§7Your contribution: "+q.amount(p.getUuid())+"/"+q.minimum),
+            Text.literal("§7Reward: "+count+"x "+label),
+            Text.literal("§7Status: "+(q.completed?"Completed":q.expiresAt<System.currentTimeMillis()?"Expired":"Active")),
+            Text.literal("§eClick for details"))));
+        return reward;
     }
     private static void quests(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin,int page){
         svc.ensureQuests(g);List<Guild.Quest> list=g.quests.values().stream().filter(q->!q.id.startsWith("bingo-") && (q.completed||q.expiresAt>System.currentTimeMillis())).toList();
