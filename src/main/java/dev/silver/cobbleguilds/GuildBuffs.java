@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Dedicated-server-only guild buffs using Cobblemon's own 1.7.x events. No mixins,
- * packets, scoreboards or client mod. Unsupported effects are never sold.
+ * packets, scoreboards or client mod. The shop contains only implemented buffs.
  */
 public final class GuildBuffs {
     private GuildBuffs() {}
@@ -30,17 +30,10 @@ public final class GuildBuffs {
         new Offer("ev_x2","EV Training x2","800000",60,2.0,Kind.EV),
         new Offer("friendship_x2","Friendship Gain x2","400000",60,2.0,Kind.FRIENDSHIP)
     );
-    // A spawn *frequency* increase, hidden abilities and Alpha require additional
-    // spawn table / form-specific integrations. Never charge for these until implemented.
-    public static final Map<String,String> UNSUPPORTED=Map.of(
-        "hidden_ability_x2", "Needs species-specific ability selection integration",
-        "alpha_spawn_x2", "Alpha is not a standard Cobblemon 1.7 spawn attribute"
-    );
     private static final long MAX_DURATION_MILLIS = 30L * 24L * 60L * 60L * 1000L;
     public static Offer byId(String id){return OFFERS.stream().filter(o->o.id().equalsIgnoreCase(id)).findFirst().orElse(null);}
     public static boolean enabled(GuildConfig config,Offer offer){return config.buffPurchasesEnabled && !config.disabledBuffs.contains(offer.id());}
     public static String price(GuildConfig config,Offer offer){return config.buffPrices.getOrDefault(offer.id(),offer.price());}
-    public static String unsupportedReason(String id){return UNSUPPORTED.get(id.toLowerCase(Locale.ROOT));}
     public static boolean active(Guild.Effect effect,long now){return effect!=null && (effect.permanent || effect.expiresAt>now);}
     public static double multiplier(Guild g,Kind kind,long now){
         if(g==null||g.closed||g.effects==null)return 1.0;
@@ -72,8 +65,7 @@ public final class GuildBuffs {
         if(!svc.config.buffPurchasesEnabled){GuildService.tell(player,"Guild buff purchases are disabled by administrators.");return false;}
         Offer offer=byId(id);
         if(offer==null){
-            String reason=unsupportedReason(id);
-            GuildService.tell(player,reason==null?"Unknown buff. Use /guild buffs to see available boosts.":"Not for sale: "+reason);
+            GuildService.tell(player,"Unknown buff. Open the Guild Buff Shop to see available boosts.");
             return false;
         }
         if(!enabled(svc.config,offer)){GuildService.tell(player,"This buff is not available in the Guild Buff Shop.");return false;}
