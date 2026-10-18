@@ -162,7 +162,7 @@ public final class GuildService {
         String line=g.color+"["+g.tag+"] §f"+p.getName().getString()+": "+plain;
         for(ServerPlayerEntity recipient:server.getPlayerManager().getPlayerList()){
             if(g.contains(recipient.getUuid()))recipient.sendMessage(Text.literal(line),false);
-            else if(spy.contains(recipient.getUuid()) && isAdmin(recipient,"cobbleguilds.admin.chatspy"))
+            else if(config.chatSpyEnabled && spy.contains(recipient.getUuid()) && isAdmin(recipient,"cobbleguilds.admin.chatspy"))
                 recipient.sendMessage(Text.literal("§8[GuildSpy] "+g.color+"["+g.tag+"] §f"+p.getName().getString()+": "+plain),false);
         }
     }
