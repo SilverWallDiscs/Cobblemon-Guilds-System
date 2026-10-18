@@ -1,6 +1,6 @@
 # Cobblemon Guilds System
 
-**Version:** `0.4.4-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
+**Version:** `0.4.5-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
 
 This alpha targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is installed **only on the dedicated server** (`fabric.mod.json` uses `"environment": "server"`). Players need only the normal client mods required by the server. It does not register client entrypoints, add HUDs, use bossbars, scoreboards or sidebars.
 
@@ -88,3 +88,12 @@ Admin menu: `/guild admin`. Chat monitoring: `/guild chatspy` (OP 4 or correspon
 - The **Alliance ChatSpy** listener already existed: `/guild chatspy` can observe `/ga` across guilds. Moderators with ChatSpy enabled now receive a single `[GuildSpy-Alliance]` copy even when in a participating guild, avoiding ambiguous regular/spy messages. Respect `chatSpyEnabled` and `cobbleguilds.admin.chatspy`.
 - This update changes no capture/shiny/rare multipliers or purchase pricing. **No client installation, HUD, sidebar or scoreboard** was added.
 - See `docs/STRESS_TEST_CHECKLIST.md` for current high-risk unverified paths.
+
+
+## 0.4.5-alpha — Admin-only temporary x1,000,000 test multipliers
+
+Open an **active guild**'s **Guild Buffs** menu while holding `cobbleguilds.admin.manage` (op/LuckPerms). Click **Test Buffs x1,000,000** and toggle SHINY, RARE, CATCH, EXPERIENCE, EV or FRIENDSHIP independently. Re-click to disable. Each experimental effect expires in **10 minutes**; **Disable ALL** removes only experimental effects. The button is not shown to regular members. This feature requires no client mod.
+
+**Crucial:** This is for private test environments only, not production. It uses the exact same Cobblemon event handlers as normal guild buffs and is a temporary highest-tier effect: it does not stack with normal buffs, cost guild funds, overwrite purchased buff timers or create ordinary shop offers. The test timer persists across restarts and still expires at its original time. Purchased effects return to normal when a test ends. Effects apply to the chosen guild's members, not globally.
+
+SHINY x1,000,000 makes successful **eligible** spawn-event shiny bonus rolls practically certain, but original nearest-player-within-48-blocks attribution still applies. RARE x1,000,000 strongly favors the existing `rare`/`ultra-rare` buckets *when the player-caused spawner offers them*; it does not generate missing spawn entries, guarantee a particular rare species or affect third-party spawn pipelines. CATCH x1,000,000 clamps the base catch rate to 255; actual final catch outcome can still vary with other factors. EXP/EV x1,000,000 can cause extremely large gains; use disposable Pokémon and a backed-up test world.

@@ -357,13 +357,59 @@ public final class GuildGui {
             "§8Poké Ball item multipliers are separate."),(pl,c)->{});
         int slot=18;
         for(var unsupported:GuildBuffs.UNSUPPORTED.entrySet())m.slot(slot++,item(Items.BARRIER,"§8"+unsupported.getKey(),"§7Unavailable: "+unsupported.getValue()),(pl,c)->{});
+        if(svc.isAdmin(p,"cobbleguilds.admin.manage"))
+            m.slot(45,item(Items.REDSTONE_TORCH,"§cTest Buffs x1,000,000","§7Admin-only · selected guild: "+g.name,
+                "§7Toggle buffs without paying or changing purchases","§7Each test expires in "+GuildBuffs.TEST_MINUTES+" minutes"),(pl,c)->testBuffs(pl,svc,g,admin));
         m.slot(47,item(Items.CLOCK,"§aActive Effects","§7Click to view timers"),(pl,c)->effects(pl,svc,g,admin));
         m.slot(49,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Guild Buff Shop");
+    }
+    /** Experimental multipliers use exactly the same handlers as purchased buffs. */
+    private static void testBuffs(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
+        if(!svc.isAdmin(p,"cobbleguilds.admin.manage") || g==null || g.closed || svc.store.byId(g.id)!=g){
+            GuildService.tell(p,"Admin-only testing requires an active guild.");return;
+        }
+        Menu m=new Menu(6);long now=System.currentTimeMillis();int[] slots={10,12,14,19,21,23};
+        Item[] icons={Items.NETHER_STAR,Items.COMPASS,material("cobblemon:poke_ball"),Items.EXPERIENCE_BOTTLE,Items.FEATHER,Items.GOLDEN_APPLE};
+        GuildBuffs.Kind[] kinds=GuildBuffs.Kind.values();
+        m.slot(4,item(Items.REDSTONE_TORCH,"§cEXPERIMENTAL x1,000,000 · "+g.name,
+            "§cTEST SERVER ONLY! Very large multipliers.",
+            "§7No price and no change to purchased buffs.",
+            "§7Effects expire after "+GuildBuffs.TEST_MINUTES+" minutes.",
+            "§7Uses the SAME Cobblemon event logic as normal buffs."),(pl,c)->{});
+        for(int i=0;i<kinds.length;i++){
+            GuildBuffs.Kind kind=kinds[i];boolean on=GuildBuffs.testActive(g,kind,now);
+            Guild.Effect fx=g.effects.get(GuildBuffs.testId(kind));
+            m.slot(slots[i],item(icons[i],(on?"§aON: ":"§7OFF: ")+kind+" x1,000,000",
+                "§7Guild: "+g.name,
+                "§7Effective: x"+GuildBuffs.multiplier(g,kind,now),
+                "§7Status: "+(on?GuildBuffs.durationText(fx,now):"Not running"),
+                "§eClick to "+(on?"disable":"enable for "+GuildBuffs.TEST_MINUTES+" minutes")),
+                (pl,c)->{if(GuildBuffs.toggleTest(svc,pl,g,kind))testBuffs(pl,svc,g,admin);});
+        }
+        m.slot(31,item(Items.PAPER,"§eImportant testing limitations",
+            "§7SHINY: nearest guild player within 48 blocks; wild spawns.",
+            "§7RARE: strongly favors eligible rare spawn buckets.",
+            "§7Neither creates new rare spawn candidates.",
+            "§7CATCH: increases base rate, not ball multiplier.",
+            "§cEXP and EV x1M can create extreme gains."),(pl,c)->{});
+        m.slot(45,item(Items.BARRIER,"§cDisable ALL test buffs",
+            "§7Only removes experimental effects, not real ones"),(pl,c)->{
+            GuildBuffs.clearTests(svc,pl,g);testBuffs(pl,svc,g,admin);
+        });
+        m.slot(49,item(Items.ARROW,"§7Back"),(pl,c)->buffs(pl,svc,g,admin));
+        m.open(p,"Admin Test Buffs · "+g.tag);
     }
     private static void effects(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
         Menu m=new Menu(6);int i=0;long now=System.currentTimeMillis();
         for(GuildBuffs.Offer o:GuildBuffs.OFFERS){Guild.Effect fx=g.effects.get(o.id());if(!GuildBuffs.active(fx,now))continue;
             m.slot(i++,item(Items.ENCHANTED_BOOK,"§d"+o.label(),"§7Remaining: "+GuildBuffs.durationText(fx,now)),(pl,c)->{});
+        }
+        for(GuildBuffs.Kind kind:GuildBuffs.Kind.values()){
+            if(!GuildBuffs.testActive(g,kind,now))continue;
+            Guild.Effect test=g.effects.get(GuildBuffs.testId(kind));
+            m.slot(i++,item(Items.REDSTONE_TORCH,"§cTEST x1,000,000 · "+kind,
+                "§7Remaining: "+GuildBuffs.durationText(test,now),
+                "§7Admin-only experimental buff"),(pl,c)->{});
         }
         m.slot(39,item(material("cobblemon:poke_ball"),"§bGuild Buff Stacking Rules",
             "§7Effective catch-rate bonus: x"+GuildBuffs.multiplier(g,GuildBuffs.Kind.CATCH,now),
