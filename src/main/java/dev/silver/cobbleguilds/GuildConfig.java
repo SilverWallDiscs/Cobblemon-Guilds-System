@@ -75,7 +75,7 @@ public final class GuildConfig {
         validate();
         try{
             Files.createDirectories(path().getParent());Path tmp=path().resolveSibling("cobbleguilds.json.tmp");
-            Files.writeString(tmp,JSON.toJson(this),StandardCharsets.UTF_8);
+            Files.writeString(tmp,GuildConfigComments.server(this),StandardCharsets.UTF_8);
             try{Files.move(tmp,path(),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);}
             catch(AtomicMoveNotSupportedException e){Files.move(tmp,path(),StandardCopyOption.REPLACE_EXISTING);}
         }catch(Exception e){throw new IllegalStateException("Could not save CobbleGuilds config",e);}
