@@ -29,7 +29,7 @@ public final class GuildQuestConfig {
             for(var q:QuestCatalog.DAILY)defaults.quests.add(new Entry("daily",q));
             for(var q:QuestCatalog.WEEKLY)defaults.quests.add(new Entry("weekly",q));
             defaults.save();
-        }else reload();
+        }else {reload();current.save();} // Preserve old settings while adding in-file help guide.
     }
     /** Only swap the live catalog after every required entry passes validation. */
     public static void reload(){
@@ -43,7 +43,7 @@ public final class GuildQuestConfig {
         apply();
         try{
             Files.createDirectories(path().getParent());Path temp=path().resolveSibling(path().getFileName()+".tmp");
-            Files.writeString(temp,GuildConfig.JSON.toJson(this),StandardCharsets.UTF_8);
+            Files.writeString(temp,GuildConfigComments.quests(this),StandardCharsets.UTF_8);
             try{Files.move(temp,path(),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);}
             catch(AtomicMoveNotSupportedException e){Files.move(temp,path(),StandardCopyOption.REPLACE_EXISTING);}
             current=this;
