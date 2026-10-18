@@ -436,9 +436,13 @@ public final class GuildService {
             }
         }
         for(ServerPlayerEntity online:server.getPlayerManager().getPlayerList()){
-            if(recipients.contains(online.getUuid()))online.sendMessage(Text.literal(line),false);
-            else if(spy.contains(online.getUuid()) && isAdmin(online,"cobbleguilds.admin.chatspy"))
+            // Give spying moderators a single explicitly marked copy of every
+            // alliance message, even when they are themselves alliance members.
+            // Non-members with the chatspy permission also see every /ga message.
+            if(config.chatSpyEnabled && spy.contains(online.getUuid()) && isAdmin(online,"cobbleguilds.admin.chatspy"))
                 online.sendMessage(Text.literal("§8[GuildSpy-Alliance] "+line),false);
+            else if(recipients.contains(online.getUuid()))
+                online.sendMessage(Text.literal(line),false);
         }
     }
     public ZoneId zone(){try{return "system".equalsIgnoreCase(config.timeZone)?ZoneId.systemDefault():ZoneId.of(config.timeZone);}catch(Exception e){return ZoneId.systemDefault();}}

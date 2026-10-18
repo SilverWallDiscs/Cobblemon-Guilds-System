@@ -1,6 +1,6 @@
 # Cobblemon Guilds System
 
-**Version:** `0.4.3-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
+**Version:** `0.4.4-alpha` · **Minecraft:** 1.21.1 · **Fabric:** dedicated server only · Java 21.
 
 This alpha targets Cobblemon 1.7.x and CobbleDollars 2.x. The mod itself is installed **only on the dedicated server** (`fabric.mod.json` uses `"environment": "server"`). Players need only the normal client mods required by the server. It does not register client entrypoints, add HUDs, use bossbars, scoreboards or sidebars.
 
@@ -80,3 +80,11 @@ Admin menu: `/guild admin`. Chat monitoring: `/guild chatspy` (OP 4 or correspon
 - Catch Rate x1.5 stays permanent (default $500,000); Catch Rate x2 costs **10,000,000 CobbleDollars for 30 minutes** by default. Server admins' explicit `buffPrices.catch_x2` overrides are preserved; to use the default remove that key in `config/cobbleguilds.json` or edit it in `/guild config` → Buffs. Existing purchased timed buffs retain their original expiry; no retroactive extension or reduction.
 - Catch buffs use Cobblemon's `POKEMON_CATCH_RATE` event and modify the target species' catch rate *during the capture calculation*. The **1.0x number on a Poké Ball is that BALL'S modifier**, not the guild bonus. It is normal for that tooltip to stay 1.0x. A Quick Ball has its own situational ball multiplier; the effects multiply the base catch rate, not add 1.5 or 2 to a ball's display. **The stronger catch buff takes precedence; x1.5 and x2 do not add or multiply together.** Pokémon species with already high catch rates can hit the game's 255 rate cap, making the difference smaller or zero. Verify with a lower-catch-rate species and enough throws; a small number of throws cannot reliably demonstrate the probability.
 - Dedicated-server-only, no HUD, sidebar, bossbar or permanent on-screen messaging. Runtime behavior still needs in-game validation.
+
+## 0.4.4-alpha — Buff tooltips and Alliance ChatSpy
+
+- The buff-info icon in both **Guild Buff Shop** and **Active Guild Effects** is now the registered `cobblemon:poke_ball` item, not a slime ball.
+- English GUI lore documents highest-tier-only behavior: Catch Rate x1.5 and x2 never stack. The permanent x1.5 bonus resumes when the timed x2 expires, if owned. Shiny Luck x2/x3 use the same strongest-active-tier rule; the lower tier resumes only if its timer remains active.
+- The **Alliance ChatSpy** listener already existed: `/guild chatspy` can observe `/ga` across guilds. Moderators with ChatSpy enabled now receive a single `[GuildSpy-Alliance]` copy even when in a participating guild, avoiding ambiguous regular/spy messages. Respect `chatSpyEnabled` and `cobbleguilds.admin.chatspy`.
+- This update changes no capture/shiny/rare multipliers or purchase pricing. **No client installation, HUD, sidebar or scoreboard** was added.
+- See `docs/STRESS_TEST_CHECKLIST.md` for current high-risk unverified paths.

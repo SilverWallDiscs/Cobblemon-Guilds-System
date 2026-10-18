@@ -347,10 +347,14 @@ public final class GuildGui {
                 confirm(pl,"Buy "+offer.label()+" for $"+GuildBuffs.price(svc.config,offer)+"?",()->{GuildBuffs.buy(svc,pl,offer.id());buffs(pl,svc,g,false);},()->buffs(pl,svc,g,false));
             });
         }
-        m.slot(39,item(Items.SLIME_BALL,"§eHow Catch Rate Buffs Work",
-            "§7The Poké Ball's own 1.0x / 5.0x stays unchanged.",
-            "§7Catch buffs multiply the target's base catch rate.",
-            "§7Only the strongest active catch buff applies."),(pl,c)->{});
+        m.slot(39,item(material("cobblemon:poke_ball"),"§eHow Guild Buffs Stack",
+            "§7Catch Rate x1.5 and x2 do not stack.",
+            "§7Only the strongest active buff applies.",
+            "§7When x2 expires, permanent x1.5 resumes",
+            "§7if your guild already owns it.",
+            "§7Shiny Luck x2 and x3 work the same way:",
+            "§7x2 resumes after x3 expires if still active.",
+            "§8Poké Ball item multipliers are separate."),(pl,c)->{});
         int slot=18;
         for(var unsupported:GuildBuffs.UNSUPPORTED.entrySet())m.slot(slot++,item(Items.BARRIER,"§8"+unsupported.getKey(),"§7Unavailable: "+unsupported.getValue()),(pl,c)->{});
         m.slot(47,item(Items.CLOCK,"§aActive Effects","§7Click to view timers"),(pl,c)->effects(pl,svc,g,admin));
@@ -361,10 +365,13 @@ public final class GuildGui {
         for(GuildBuffs.Offer o:GuildBuffs.OFFERS){Guild.Effect fx=g.effects.get(o.id());if(!GuildBuffs.active(fx,now))continue;
             m.slot(i++,item(Items.ENCHANTED_BOOK,"§d"+o.label(),"§7Remaining: "+GuildBuffs.durationText(fx,now)),(pl,c)->{});
         }
-        m.slot(39,item(Items.SLIME_BALL,"§bEffective Guild Catch Rate",
-            "§7Guild bonus: x"+GuildBuffs.multiplier(g,GuildBuffs.Kind.CATCH,now),
-            "§7Poké Ball item multiplier stays independent.",
-            "§7Only the highest active capture tier applies."),(pl,c)->{});
+        m.slot(39,item(material("cobblemon:poke_ball"),"§bGuild Buff Stacking Rules",
+            "§7Effective catch-rate bonus: x"+GuildBuffs.multiplier(g,GuildBuffs.Kind.CATCH,now),
+            "§7Effective shiny-luck bonus: x"+GuildBuffs.multiplier(g,GuildBuffs.Kind.SHINY,now),
+            "§7Catch x1.5 / x2 do not stack; strongest wins.",
+            "§7After x2 expires, permanent x1.5 resumes.",
+            "§7Shiny x2 / x3 also do not stack.",
+            "§7After x3 expires, x2 resumes if still active."),(pl,c)->{});
         m.slot(49,item(Items.ARROW,"Back"),(pl,c)->buffs(pl,svc,g,admin));m.open(p,"Active Guild Effects");
     }
     private static void upgrades(ServerPlayerEntity p,GuildService svc,Guild g,boolean admin){
