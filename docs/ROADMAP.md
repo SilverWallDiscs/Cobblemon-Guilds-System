@@ -39,4 +39,4 @@ Source-of-truth requirements: `Instrucciones.txt` (included in this package).
 - [x] Experimental event hooks for shiny, catch, battle XP, EV and friendship (source-only; default off).
 - [ ] Complete real server launch verification; fix Fabric/Java API mismatches, obtain passing CI JAR.
 - [x] Rare and Ultra-Rare BestSpawner bucket-weight boost for player-caused attempts (source-only).
-- [ ] Hidden ability and Alpha-specific effects (not offered for purchase).
+
