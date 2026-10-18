@@ -19,4 +19,4 @@
 10. Invitations, offline members, pending applications, rank privilege escalation, admin GUI permissions, banned players, leader transfer, chat input cancellation, home teleport, midnight fees and daily/weekly resets.
 11. Offline player skulls and interactions with other chat mods / LuckPerms may still require compatibility testing.
 
-**Incomplete / known limits:** Hidden Ability and Alpha boosts are not sold; Shiny and Rare are dependent on particular spawn-event paths; unclean-crash recovery is not fully transactional; Minecraft multiplayer runtime validation is not provided by a passing Gradle build.
+**Incomplete / known limits:** Only implemented guild boosts are listed; Shiny and Rare are dependent on particular spawn-event paths; unclean-crash recovery is not fully transactional; Minecraft multiplayer runtime validation is not provided by a passing Gradle build.
