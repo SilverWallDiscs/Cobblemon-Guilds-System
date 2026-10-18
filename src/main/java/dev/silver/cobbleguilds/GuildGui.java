@@ -355,8 +355,6 @@ public final class GuildGui {
             "§7Shiny Luck x2 and x3 work the same way:",
             "§7x2 resumes after x3 expires if still active.",
             "§8Poké Ball item multipliers are separate."),(pl,c)->{});
-        int slot=18;
-        for(var unsupported:GuildBuffs.UNSUPPORTED.entrySet())m.slot(slot++,item(Items.BARRIER,"§8"+unsupported.getKey(),"§7Unavailable: "+unsupported.getValue()),(pl,c)->{});
         m.slot(47,item(Items.CLOCK,"§aActive Effects","§7Click to view timers"),(pl,c)->effects(pl,svc,g,admin));
         m.slot(49,item(Items.ARROW,"Back"),(pl,c)->guild(pl,svc,g,admin));m.open(p,"Guild Buff Shop");
     }
